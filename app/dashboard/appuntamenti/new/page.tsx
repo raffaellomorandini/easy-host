@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -19,7 +19,7 @@ interface Lead {
   status: string
 }
 
-export default function NewAppuntamentoPage() {
+function NewAppuntamentoForm() {
   const { data: session } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -312,5 +312,17 @@ export default function NewAppuntamentoPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function NewAppuntamentoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Caricamento...</div>
+      </div>
+    }>
+      <NewAppuntamentoForm />
+    </Suspense>
   )
 }
