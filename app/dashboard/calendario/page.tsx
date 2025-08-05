@@ -180,8 +180,8 @@ export default function CalendarioPage() {
   const handleEventDrop = async (info: any) => {
     const event = info.event
     const newDate = event.start
-    const eventType = event.extendedProps.type
-    const eventData = event.extendedProps.data
+    const eventType = event.extendedProps?.type
+    const eventData = event.extendedProps?.data
 
     try {
       if (eventType === 'appuntamento') {
@@ -216,7 +216,7 @@ export default function CalendarioPage() {
     const events = getCalendarEvents()
     const csvContent = "data:text/csv;charset=utf-8," + 
       "Titolo,Data,Tipo\n" +
-      events.map(e => `"${e.title}","${e.start}","${e.extendedProps.type}"`).join("\n")
+      events.map(e => `"${e.title}","${e.start}","${e.extendedProps?.type || 'evento'}"`).join("\n")
     
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement("a")
@@ -489,18 +489,18 @@ export default function CalendarioPage() {
               </div>
 
               <div className="space-y-4">
-                {selectedEvent.extendedProps.type === 'appuntamento' ? (
+                {selectedEvent.extendedProps?.type === 'appuntamento' ? (
                   <div>
                     <h3 className="font-medium text-gray-900 mb-2">Dettagli Appuntamento</h3>
                     <div className="space-y-2 text-sm">
-                      <p><strong>Cliente:</strong> {selectedEvent.extendedProps.data.leadNome}</p>
-                      <p><strong>Località:</strong> {selectedEvent.extendedProps.data.leadLocalita}</p>
-                      <p><strong>Tipo:</strong> {selectedEvent.extendedProps.data.tipo}</p>
-                      {selectedEvent.extendedProps.data.luogo && (
-                        <p><strong>Luogo:</strong> {selectedEvent.extendedProps.data.luogo}</p>
+                      <p><strong>Cliente:</strong> {selectedEvent.extendedProps?.data?.leadNome}</p>
+                      <p><strong>Località:</strong> {selectedEvent.extendedProps?.data?.leadLocalita}</p>
+                      <p><strong>Tipo:</strong> {selectedEvent.extendedProps?.data?.tipo}</p>
+                      {selectedEvent.extendedProps?.data?.luogo && (
+                        <p><strong>Luogo:</strong> {selectedEvent.extendedProps?.data?.luogo}</p>
                       )}
-                      {selectedEvent.extendedProps.data.note && (
-                        <p><strong>Note:</strong> {selectedEvent.extendedProps.data.note}</p>
+                      {selectedEvent.extendedProps?.data?.note && (
+                        <p><strong>Note:</strong> {selectedEvent.extendedProps?.data?.note}</p>
                       )}
                     </div>
                   </div>
@@ -508,11 +508,11 @@ export default function CalendarioPage() {
                   <div>
                     <h3 className="font-medium text-gray-900 mb-2">Dettagli Task</h3>
                     <div className="space-y-2 text-sm">
-                      <p><strong>Tipo:</strong> {selectedEvent.extendedProps.data.tipo}</p>
-                      <p><strong>Priorità:</strong> {selectedEvent.extendedProps.data.priorita}</p>
-                      <p><strong>Stato:</strong> {selectedEvent.extendedProps.data.stato}</p>
-                      {selectedEvent.extendedProps.data.descrizione && (
-                        <p><strong>Descrizione:</strong> {selectedEvent.extendedProps.data.descrizione}</p>
+                      <p><strong>Tipo:</strong> {selectedEvent.extendedProps?.data?.tipo}</p>
+                      <p><strong>Priorità:</strong> {selectedEvent.extendedProps?.data?.priorita}</p>
+                      <p><strong>Stato:</strong> {selectedEvent.extendedProps?.data?.stato}</p>
+                      {selectedEvent.extendedProps?.data?.descrizione && (
+                        <p><strong>Descrizione:</strong> {selectedEvent.extendedProps?.data?.descrizione}</p>
                       )}
                     </div>
                   </div>
