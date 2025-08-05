@@ -91,7 +91,7 @@ export const tasks = pgTable('tasks', {
   stato: varchar('stato', { length: 20 }).default('da_fare'), // 'da_fare', 'in_corso', 'completato', 'annullato'
   dataScadenza: timestamp('data_scadenza'),
   completato: boolean('completato').default(false),
-  colore: varchar('colore', { length: 7 }).default('#3b82f6'), // hex color for calendar
+  colore: varchar('colore', { length: 50 }).default('#3b82f6'), // hex color or CSS classes for calendar
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

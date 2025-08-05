@@ -21,7 +21,11 @@ export async function GET() {
     return NextResponse.json(userTasks);
   } catch (error) {
     console.error('Error fetching tasks:', error);
-    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Database error', 
+      details: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    }, { status: 500 });
   }
 }
 

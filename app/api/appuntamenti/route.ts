@@ -96,6 +96,11 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { id, ...updateData } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID è richiesto' }, { status: 400 });
+    }
+
     updateData.updatedAt = new Date();
     
     const updatedAppuntamento = await db
@@ -103,9 +108,45 @@ export async function PUT(request: NextRequest) {
       .set(updateData)
       .where(eq(appuntamenti.id, id))
       .returning();
+
+    if (updatedAppuntamento.length === 0) {
+      return NextResponse.json({ error: 'Appuntamento non trovato' }, { status: 404 });
+    }
     
     return NextResponse.json(updatedAppuntamento[0]);
   } catch (error) {
+    console.error('Error updating appuntamento:', error);
+    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const session = await auth();
+  
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID è richiesto' }, { status: 400 });
+    }
+
+    const deletedAppuntamento = await db
+      .delete(appuntamenti)
+      .where(eq(appuntamenti.id, id))
+      .returning();
+
+    if (deletedAppuntamento.length === 0) {
+      return NextResponse.json({ error: 'Appuntamento non trovato' }, { status: 404 });
+    }
+    
+    return NextResponse.json({ message: 'Appuntamento eliminato con successo', deletedAppuntamento: deletedAppuntamento[0] });
+  } catch (error) {
+    console.error('Error deleting appuntamento:', error);
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
   }
 }

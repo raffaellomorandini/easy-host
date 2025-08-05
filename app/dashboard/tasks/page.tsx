@@ -181,6 +181,16 @@ export default function TasksPage() {
 
   const getPriorityColor = (priorita: string) => {
     switch (priorita) {
+      case 'urgente': return '#dc2626'  // red
+      case 'alta': return '#ea580c'     // orange
+      case 'media': return '#d97706'    // yellow/amber
+      case 'bassa': return '#16a34a'    // green
+      default: return '#6b7280'         // gray
+    }
+  }
+
+  const getPriorityColorClasses = (priorita: string) => {
+    switch (priorita) {
       case 'urgente': return 'bg-red-100 text-red-800'
       case 'alta': return 'bg-orange-100 text-orange-800'
       case 'media': return 'bg-yellow-100 text-yellow-800'
@@ -510,7 +520,7 @@ export default function TasksPage() {
 
                 <div className="flex items-center gap-2">
                   {/* Priority Badge */}
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(task.priorita)}`}>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColorClasses(task.priorita)}`}>
                     {task.priorita}
                   </span>
 

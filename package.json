@@ -9,6 +9,8 @@
     "lint": "next lint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:init": "tsx scripts/init-db.ts",
+    "db:update": "tsx scripts/update-schema.ts",
     "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
