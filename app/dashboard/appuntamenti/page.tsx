@@ -134,82 +134,30 @@ export default function AppuntamentiPage() {
   }
 
   return (
-    <div className="min-h-screen gradient-primary">
-      {/* Header */}
-      <motion.header 
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="glass border-b border-white/20"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-6 gap-4">
-            <motion.div 
-              className="flex items-center"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Link href="/dashboard">
-                <Button className="btn-secondary mr-4">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Dashboard
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-gradient text-2xl lg:text-3xl font-bold">
-                  📅 Gestione Appuntamenti
-                </h1>
-                <div className="flex items-center gap-4 mt-1">
-                  <p className="text-gray-600 text-sm lg:text-base">Visualizza e gestisci tutti gli appuntamenti</p>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <CalendarDays className="h-4 w-4" />
-                    <span>{appuntamenti.length} appuntamenti totali</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-            
-            <motion.div 
-              className="flex items-center gap-3"
-              initial={{ x: 20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              <div className="hidden lg:flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                  <span className="text-gray-600">{appuntamenti.filter(a => !a.completato && new Date(a.data) >= new Date()).length} Prossimi</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                  <span className="text-gray-600">{appuntamenti.filter(a => a.completato).length} Completati</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-red-500"></div>
-                  <span className="text-gray-600">{appuntamenti.filter(a => !a.completato && new Date(a.data) < new Date()).length} Scaduti</span>
-                </div>
-              </div>
-              
-              <Link href="/dashboard/calendario">
-                <Button className="btn-secondary">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Calendario
-                </Button>
-              </Link>
-              
-              <Link href="/dashboard/appuntamenti/new">
-                <Button className="btn-primary">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nuovo Appuntamento
-                </Button>
-              </Link>
-            </motion.div>
-          </div>
+    <div>
+      {/* Page Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Gestione Appuntamenti</h1>
+          <p className="text-gray-600 mt-1">
+            {appuntamenti.length} appuntamenti totali • {appuntamenti.filter(a => !a.completato && new Date(a.data) >= new Date()).length} prossimi • {appuntamenti.filter(a => a.completato).length} completati
+          </p>
         </div>
-      </motion.header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="flex gap-3">
+          <Link href="/dashboard/calendario">
+            <Button className="btn-secondary">
+              <Calendar className="h-4 w-4 mr-2" />
+              Calendario
+            </Button>
+          </Link>
+          <Link href="/dashboard/appuntamenti/new">
+            <Button className="btn-primary">
+              <Plus className="h-4 w-4 mr-2" />
+              Nuovo Appuntamento
+            </Button>
+          </Link>
+        </div>
+      </div>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white overflow-hidden shadow rounded-lg">
@@ -285,13 +233,13 @@ export default function AppuntamentiPage() {
           </div>
         </div>
 
-        {/* Advanced Filters */}
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="card shadow-elegant mb-6"
-        >
+      {/* Advanced Filters */}
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="card mb-6"
+      >
           <div className="p-6">
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Search */}
@@ -350,8 +298,8 @@ export default function AppuntamentiPage() {
           </div>
         </motion.div>
 
-        {/* Appuntamenti List */}
-        <div className="space-y-4">
+      {/* Appuntamenti List */}
+      <div className="space-y-4">
           {filteredAppuntamenti.map((appuntamento, index) => {
             const isOverdue = !appuntamento.completato && new Date(appuntamento.data) < new Date()
             const isUpcoming = !appuntamento.completato && new Date(appuntamento.data) >= new Date()
@@ -513,8 +461,8 @@ export default function AppuntamentiPage() {
           })}
         </div>
 
-        {/* Empty State */}
-        {filteredAppuntamenti.length === 0 && (
+      {/* Empty State */}
+      {filteredAppuntamenti.length === 0 && (
           <motion.div 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -552,8 +500,7 @@ export default function AppuntamentiPage() {
               </div>
             </div>
           </motion.div>
-        )}
-      </main>
+      )}
     </div>
   )
 }

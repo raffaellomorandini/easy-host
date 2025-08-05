@@ -50,7 +50,6 @@ interface Appuntamento {
 
 interface Task {
   id: number
-  userId: string
   titolo: string
   descrizione?: string
   tipo: string
@@ -59,7 +58,6 @@ interface Task {
   dataScadenza?: string
   completato: boolean
   colore: string
-  createdAt: string
 }
 
 export default function CalendarioPage() {
@@ -68,72 +66,71 @@ export default function CalendarioPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'calendar' | 'list'>('calendar')
-  const [calendarView, setCalendarView] = useState('dayGridMonth')
-  const [showFilter, setShowFilter] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
   const [showEventModal, setShowEventModal] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
-  const [searchTerm, setSearchTerm] = useState('')
   const calendarRef = useRef<FullCalendar>(null)
+
+  // Filtri
   const [filters, setFilters] = useState({
     showAppuntamenti: true,
     showTasks: true,
     showCompleted: false,
-    priorityFilter: 'all' as 'all' | 'urgente' | 'alta' | 'media' | 'bassa'
+    priorita: 'all' as 'all' | 'bassa' | 'media' | 'alta' | 'urgente',
+    search: ''
   })
 
   useEffect(() => {
     if (session) {
-      fetchData()
+      fetchAppuntamenti()
+      fetchTasks()
     }
   }, [session])
 
-  const fetchData = async () => {
-    setLoading(true)
+  const fetchAppuntamenti = async () => {
     try {
-      // Fetch appuntamenti
-      const appuntamentiResponse = await fetch('/api/appuntamenti')
-      if (appuntamentiResponse.ok) {
-        const appuntamentiData = await appuntamentiResponse.json()
-        setAppuntamenti(appuntamentiData)
-      }
-
-      // Fetch tasks
-      const tasksResponse = await fetch('/api/tasks')
-      if (tasksResponse.ok) {
-        const tasksData = await tasksResponse.json()
-        setTasks(tasksData)
+      const response = await fetch('/api/appuntamenti')
+      if (response.ok) {
+        const data = await response.json()
+        setAppuntamenti(data)
       }
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error('Error fetching appuntamenti:', error)
+    }
+  }
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks')
+      if (response.ok) {
+        const data = await response.json()
+        setTasks(data)
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  // Converti appuntamenti e tasks in eventi per FullCalendar
   const getCalendarEvents = (): EventInput[] => {
     const events: EventInput[] = []
 
-    // Aggiungi appuntamenti
     if (filters.showAppuntamenti) {
       appuntamenti
         .filter(app => {
-          const matchesCompleted = filters.showCompleted || !app.completato
-          const matchesSearch = !searchTerm || 
-            app.leadNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            app.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            app.luogo?.toLowerCase().includes(searchTerm.toLowerCase())
-          return matchesCompleted && matchesSearch
+          if (!filters.showCompleted && app.completato) return false
+          if (filters.search && !app.leadNome.toLowerCase().includes(filters.search.toLowerCase()) &&
+              !app.tipo.toLowerCase().includes(filters.search.toLowerCase())) return false
+          return true
         })
         .forEach(app => {
           events.push({
             id: `app-${app.id}`,
-            title: `📅 ${app.leadNome} - ${app.tipo}`,
+            title: `${app.leadNome} - ${app.tipo}`,
             start: app.data,
             backgroundColor: app.completato ? '#10b981' : '#3b82f6',
-            borderColor: app.completato ? '#10b981' : '#3b82f6',
-            textColor: 'white',
-            classNames: ['fc-event-custom'],
+            borderColor: app.completato ? '#059669' : '#2563eb',
             extendedProps: {
               type: 'appuntamento',
               data: app
@@ -142,40 +139,28 @@ export default function CalendarioPage() {
         })
     }
 
-    // Aggiungi tasks
     if (filters.showTasks) {
       tasks
         .filter(task => {
-          const matchesCompleted = filters.showCompleted || !task.completato
-          const matchesPriority = filters.priorityFilter === 'all' || task.priorita === filters.priorityFilter
-          const matchesSearch = !searchTerm || 
-            task.titolo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            task.descrizione?.toLowerCase().includes(searchTerm.toLowerCase())
-          const hasDate = task.dataScadenza
-          
-          return matchesCompleted && matchesPriority && matchesSearch && hasDate
+          if (!filters.showCompleted && task.completato) return false
+          if (filters.priorita !== 'all' && task.priorita !== filters.priorita) return false
+          if (filters.search && !task.titolo.toLowerCase().includes(filters.search.toLowerCase())) return false
+          return true
         })
         .forEach(task => {
-          const priorityIcon = {
-            'urgente': '🔴',
-            'alta': '🟠',
-            'media': '🔵',
-            'bassa': '⚪'
-          }[task.priorita] || '🔵'
-
-          events.push({
-            id: `task-${task.id}`,
-            title: `${priorityIcon} ${task.titolo}`,
-            start: task.dataScadenza,
-            backgroundColor: task.completato ? '#6b7280' : task.colore,
-            borderColor: task.completato ? '#6b7280' : task.colore,
-            textColor: 'white',
-            classNames: ['fc-event-custom'],
-            extendedProps: {
-              type: 'task',
-              data: task
-            }
-          })
+          if (task.dataScadenza) {
+            events.push({
+              id: `task-${task.id}`,
+              title: task.titolo,
+              start: task.dataScadenza,
+              backgroundColor: task.colore,
+              borderColor: task.colore,
+              extendedProps: {
+                type: 'task',
+                data: task
+              }
+            })
+          }
         })
     }
 
@@ -183,71 +168,55 @@ export default function CalendarioPage() {
   }
 
   const handleEventClick = (info: EventClickArg) => {
-    const event = info.event
-    const type = event.extendedProps.type
-    const data = event.extendedProps.data
-    
-    setSelectedEvent({ type, data, event })
+    setSelectedEvent(info.event)
     setShowEventModal(true)
   }
 
-  const handleDateSelect = (selectInfo: DateSelectArg) => {
-    toast.success('Data selezionata! Crea un nuovo evento.')
-    // Qui puoi aprire un modal per creare un nuovo evento
+  const handleDateSelect = (info: DateSelectArg) => {
+    // TODO: Implementare creazione nuovo evento
+    console.log('Selected date:', info.start)
   }
 
   const handleEventDrop = async (info: any) => {
+    const event = info.event
+    const newDate = event.start
+    const eventType = event.extendedProps.type
+    const eventData = event.extendedProps.data
+
     try {
-      const event = info.event
-      const type = event.extendedProps.type
-      const data = event.extendedProps.data
-      
-      if (type === 'appuntamento') {
+      if (eventType === 'appuntamento') {
         const response = await fetch('/api/appuntamenti', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: data.id,
-            data: event.start.toISOString()
-          })
+          body: JSON.stringify({ id: eventData.id, data: newDate.toISOString() })
         })
-        
         if (response.ok) {
-          toast.success('Appuntamento spostato con successo!')
-          fetchData()
-        } else {
-          info.revert()
-          toast.error('Errore durante lo spostamento')
+          toast.success('Appuntamento spostato!')
+          fetchAppuntamenti()
         }
-      } else if (type === 'task') {
+      } else if (eventType === 'task') {
         const response = await fetch('/api/tasks', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: data.id,
-            dataScadenza: event.start.toISOString()
-          })
+          body: JSON.stringify({ id: eventData.id, dataScadenza: newDate.toISOString() })
         })
-        
         if (response.ok) {
-          toast.success('Task spostato con successo!')
-          fetchData()
-        } else {
-          info.revert()
-          toast.error('Errore durante lo spostamento')
+          toast.success('Task spostato!')
+          fetchTasks()
         }
       }
     } catch (error) {
-      info.revert()
+      console.error('Error updating event:', error)
       toast.error('Errore durante lo spostamento')
+      info.revert()
     }
   }
 
   const exportCalendar = () => {
     const events = getCalendarEvents()
     const csvContent = "data:text/csv;charset=utf-8," + 
-      "Titolo,Data,Tipo,Descrizione\n" +
-      events.map(e => `"${e.title}","${e.start}","${e.extendedProps?.type || 'evento'}","${e.extendedProps?.data?.descrizione || e.extendedProps?.data?.note || ''}"`).join("\n")
+      "Titolo,Data,Tipo\n" +
+      events.map(e => `"${e.title}","${e.start}","${e.extendedProps.type}"`).join("\n")
     
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement("a")
@@ -260,26 +229,6 @@ export default function CalendarioPage() {
     toast.success('Calendario esportato!')
   }
 
-  const getPriorityColor = (priorita: string) => {
-    switch (priorita) {
-      case 'urgente': return 'bg-red-100 text-red-800'
-      case 'alta': return 'bg-orange-100 text-orange-800'
-      case 'media': return 'bg-blue-100 text-blue-800'
-      case 'bassa': return 'bg-gray-100 text-gray-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getStatusColor = (stato: string) => {
-    switch (stato) {
-      case 'completato': return 'bg-green-100 text-green-800'
-      case 'in_corso': return 'bg-yellow-100 text-yellow-800'
-      case 'da_fare': return 'bg-blue-100 text-blue-800'
-      case 'annullato': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -289,217 +238,148 @@ export default function CalendarioPage() {
   }
 
   return (
-    <div className="min-h-screen gradient-primary">
-      {/* Header */}
-      <motion.header 
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="glass border-b border-white/20"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-6 gap-4">
-            <motion.div 
-              className="flex items-center"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Link href="/dashboard">
-                <Button className="btn-secondary mr-4">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Dashboard
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-gradient text-2xl lg:text-3xl font-bold">
-                  📅 Calendario & Agenda
-                </h1>
-                <p className="text-gray-600 text-sm lg:text-base">Gestisci appuntamenti, task e eventi</p>
-              </div>
-            </motion.div>
-            
-            <motion.div 
-              className="flex flex-wrap items-center gap-2"
-              initial={{ x: 20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              {/* View Toggle */}
-              <div className="flex bg-white/10 rounded-lg p-1">
-                <Button
-                  variant={view === 'calendar' ? 'default' : 'ghost'}
-                  onClick={() => setView('calendar')}
-                  size="sm"
-                  className={view === 'calendar' ? 'btn-primary' : 'text-gray-600 hover:text-gray-900'}
-                >
-                  <CalendarIcon className="h-4 w-4 mr-1" />
-                  Calendario
-                </Button>
-                <Button
-                  variant={view === 'list' ? 'default' : 'ghost'}
-                  onClick={() => setView('list')}
-                  size="sm"
-                  className={view === 'list' ? 'btn-primary' : 'text-gray-600 hover:text-gray-900'}
-                >
-                  <List className="h-4 w-4 mr-1" />
-                  Lista
-                </Button>
-              </div>
-
-              {/* Calendar View Buttons */}
-              {view === 'calendar' && (
-                <div className="flex bg-white/10 rounded-lg p-1">
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setCalendarView('dayGridMonth')
-                      calendarRef.current?.getApi().changeView('dayGridMonth')
-                    }}
-                    size="sm"
-                    className={calendarView === 'dayGridMonth' ? 'bg-white text-gray-900' : 'text-gray-600 hover:text-gray-900'}
-                  >
-                    Mese
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setCalendarView('timeGridWeek')
-                      calendarRef.current?.getApi().changeView('timeGridWeek')
-                    }}
-                    size="sm"
-                    className={calendarView === 'timeGridWeek' ? 'bg-white text-gray-900' : 'text-gray-600 hover:text-gray-900'}
-                  >
-                    Settimana
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setCalendarView('timeGridDay')
-                      calendarRef.current?.getApi().changeView('timeGridDay')
-                    }}
-                    size="sm"
-                    className={calendarView === 'timeGridDay' ? 'bg-white text-gray-900' : 'text-gray-600 hover:text-gray-900'}
-                  >
-                    Giorno
-                  </Button>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <Button
-                className="btn-secondary"
-                onClick={() => setShowFilter(!showFilter)}
-                size="sm"
-              >
-                <Filter className="h-4 w-4 mr-1" />
-                Filtri
-              </Button>
-              
-              <Button
-                className="btn-secondary"
-                onClick={exportCalendar}
-                size="sm"
-              >
-                <Download className="h-4 w-4 mr-1" />
-                Export
-              </Button>
-              
-              <Link href="/dashboard/appuntamenti/new">
-                <Button className="btn-primary">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Nuovo
-                </Button>
-              </Link>
-            </motion.div>
-          </div>
+    <div>
+      {/* Page Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Calendario & Task</h1>
+          <p className="text-gray-600 mt-1">Vista unificata di appuntamenti e task</p>
         </div>
-      </motion.header>
+        <div className="flex gap-3">
+          <Button onClick={() => setShowFilters(!showFilters)} className="btn-secondary">
+            <Filter className="h-4 w-4 mr-2" />
+            Filtri
+          </Button>
+          <Button onClick={exportCalendar} className="btn-secondary">
+            <Download className="h-4 w-4 mr-2" />
+            Esporta
+          </Button>
+          <Button onClick={() => setShowEventModal(true)} className="btn-primary">
+            <Plus className="h-4 w-4 mr-2" />
+            Nuovo Evento
+          </Button>
+        </div>
+      </div>
+
+      {/* View Toggle */}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <Button
+            onClick={() => setView('calendar')}
+            size="sm"
+            className={view === 'calendar' ? 'btn-primary' : 'btn-secondary'}
+          >
+            <CalendarIcon className="h-4 w-4 mr-1" />
+            Calendario
+          </Button>
+          <Button
+            onClick={() => setView('list')}
+            size="sm"
+            className={view === 'list' ? 'btn-primary' : 'btn-secondary'}
+          >
+            <List className="h-4 w-4 mr-1" />
+            Lista
+          </Button>
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            onClick={() => calendarRef.current?.getApi().changeView('dayGridMonth')}
+            size="sm"
+            className="btn-secondary"
+          >
+            Mese
+          </Button>
+          <Button
+            onClick={() => calendarRef.current?.getApi().changeView('timeGridWeek')}
+            size="sm"
+            className="btn-secondary"
+          >
+            Settimana
+          </Button>
+          <Button
+            onClick={() => calendarRef.current?.getApi().changeView('timeGridDay')}
+            size="sm"
+            className="btn-secondary"
+          >
+            Giorno
+          </Button>
+        </div>
+      </div>
 
       {/* Advanced Filters */}
-      {showFilter && (
+      {showFilters && (
         <motion.div 
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
-          className="bg-white/80 backdrop-blur-sm border-b border-gray-200"
+          className="card mb-6 overflow-hidden"
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Search */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cerca eventi
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Cerca eventi</label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Cerca..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    value={filters.search}
+                    onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                     className="form-input pl-10"
                   />
                 </div>
               </div>
 
-              {/* Event Types */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tipi di evento
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tipi di evento</label>
                 <div className="space-y-2">
                   <label className="flex items-center">
                     <input
                       type="checkbox"
                       checked={filters.showAppuntamenti}
                       onChange={(e) => setFilters(prev => ({ ...prev, showAppuntamenti: e.target.checked }))}
-                      className="rounded border-gray-300 text-blue-600 mr-2"
+                      className="mr-2"
                     />
-                    <span className="text-sm">📅 Appuntamenti</span>
+                    <span className="text-sm">Appuntamenti</span>
                   </label>
                   <label className="flex items-center">
                     <input
                       type="checkbox"
                       checked={filters.showTasks}
                       onChange={(e) => setFilters(prev => ({ ...prev, showTasks: e.target.checked }))}
-                      className="rounded border-gray-300 text-blue-600 mr-2"
+                      className="mr-2"
                     />
-                    <span className="text-sm">📋 Tasks</span>
+                    <span className="text-sm">Tasks</span>
                   </label>
                 </div>
               </div>
 
-              {/* Priority Filter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Priorità
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Priorità Task</label>
                 <select
-                  value={filters.priorityFilter}
-                  onChange={(e) => setFilters(prev => ({ ...prev, priorityFilter: e.target.value as any }))}
-                  className="form-select"
+                  value={filters.priorita}
+                  onChange={(e) => setFilters(prev => ({ ...prev, priorita: e.target.value as any }))}
+                  className="form-input"
                 >
-                  <option value="all">Tutte le priorità</option>
-                  <option value="urgente">🔴 Urgente</option>
-                  <option value="alta">🟠 Alta</option>
-                  <option value="media">🔵 Media</option>
-                  <option value="bassa">⚪ Bassa</option>
+                  <option value="all">Tutte</option>
+                  <option value="bassa">Bassa</option>
+                  <option value="media">Media</option>
+                  <option value="alta">Alta</option>
+                  <option value="urgente">Urgente</option>
                 </select>
               </div>
 
-              {/* Status */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Stato
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mostra completati</label>
                 <label className="flex items-center">
                   <input
                     type="checkbox"
                     checked={filters.showCompleted}
                     onChange={(e) => setFilters(prev => ({ ...prev, showCompleted: e.target.checked }))}
-                    className="rounded border-gray-300 text-green-600 mr-2"
+                    className="mr-2"
                   />
-                  <span className="text-sm">✅ Mostra completati</span>
+                  <span className="text-sm">Includi completati</span>
                 </label>
               </div>
             </div>
@@ -507,149 +387,84 @@ export default function CalendarioPage() {
         </motion.div>
       )}
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {view === 'calendar' ? (
-          /* Calendar View */
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="card shadow-elegant-lg"
-          >
-            <div className="p-6">
-              <FullCalendar
-                ref={calendarRef}
-                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin, multiMonthPlugin]}
-                initialView="dayGridMonth"
-                headerToolbar={{
-                  left: 'prev,next today',
-                  center: 'title',
-                  right: ''
-                }}
-                events={getCalendarEvents()}
-                eventClick={handleEventClick}
-                selectable={true}
-                selectMirror={true}
-                select={handleDateSelect}
-                editable={true}
-                droppable={true}
-                eventDrop={handleEventDrop}
-                height="auto"
-                locale="it"
-                firstDay={1}
-                eventDisplay="block"
-                dayMaxEventRows={4}
-                moreLinkText="altri"
-                buttonText={{
-                  today: 'Oggi',
-                  month: 'Mese',
-                  week: 'Settimana',
-                  day: 'Giorno',
-                  list: 'Lista'
-                }}
-                slotLabelFormat={{
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false
-                }}
-                eventTimeFormat={{
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false
-                }}
-                allDayText="Tutto il giorno"
-                noEventsText="Nessun evento"
-                eventClassNames="cursor-pointer transition-all duration-200 hover:scale-105"
-              />
+      {/* Calendar Container */}
+      <div className="card">
+        <div className="p-6">
+          {view === 'calendar' ? (
+            <FullCalendar
+              ref={calendarRef}
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin, multiMonthPlugin]}
+              initialView="dayGridMonth"
+              headerToolbar={{
+                left: 'prev,next today',
+                center: 'title',
+                right: ''
+              }}
+              events={getCalendarEvents()}
+              eventClick={handleEventClick}
+              selectable={true}
+              selectMirror={true}
+              select={handleDateSelect}
+              editable={true}
+              droppable={true}
+              eventDrop={handleEventDrop}
+              height="auto"
+              locale="it"
+              firstDay={1}
+              eventDisplay="block"
+              dayMaxEventRows={4}
+              moreLinkText="altri"
+              buttonText={{
+                today: 'Oggi',
+                month: 'Mese',
+                week: 'Settimana',
+                day: 'Giorno',
+                list: 'Lista'
+              }}
+              slotLabelFormat={{
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              }}
+              eventTimeFormat={{
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              }}
+              allDayText="Tutto il giorno"
+              noEventsText="Nessun evento"
+              eventClassNames="cursor-pointer transition-all duration-200 hover:scale-105"
+            />
+          ) : (
+            <div className="space-y-4">
+              {getCalendarEvents().map((event) => (
+                <div key={event.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div 
+                      className="w-4 h-4 rounded-full" 
+                      style={{ backgroundColor: event.backgroundColor }}
+                    />
+                    <div>
+                      <h3 className="font-medium">{event.title}</h3>
+                      <p className="text-sm text-gray-500">
+                        {new Date(event.start as string).toLocaleDateString('it-IT')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" className="btn-secondary">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" className="btn-secondary">
+                      <Edit3 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
-          </motion.div>
-        ) : (
-          /* List View */
-          <div className="space-y-6">
-            {/* Appuntamenti */}
-            {filters.showAppuntamenti && (
-              <div className="bg-white rounded-lg shadow">
-                <div className="p-6 border-b">
-                  <h2 className="text-xl font-semibold">Appuntamenti</h2>
-                </div>
-                <div className="divide-y">
-                  {appuntamenti
-                    .filter(app => filters.showCompleted || !app.completato)
-                    .map(app => (
-                      <div key={app.id} className="p-6 hover:bg-gray-50">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium">{app.leadNome} - {app.tipo}</h3>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {new Date(app.data).toLocaleDateString('it-IT', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </p>
-                            {app.luogo && (
-                              <p className="text-sm text-gray-600">📍 {app.luogo}</p>
-                            )}
-                            {app.note && (
-                              <p className="text-sm text-gray-700 mt-2">{app.note}</p>
-                            )}
-                          </div>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            app.completato ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {app.completato ? 'Completato' : 'In programma'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Tasks */}
-            {filters.showTasks && (
-              <div className="bg-white rounded-lg shadow">
-                <div className="p-6 border-b">
-                  <h2 className="text-xl font-semibold">Tasks</h2>
-                </div>
-                <div className="divide-y">
-                  {tasks
-                    .filter(task => filters.showCompleted || !task.completato)
-                    .map(task => (
-                      <div key={task.id} className="p-6 hover:bg-gray-50">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium">{task.titolo}</h3>
-                            {task.descrizione && (
-                              <p className="text-sm text-gray-700 mt-1">{task.descrizione}</p>
-                            )}
-                            {task.dataScadenza && (
-                              <p className="text-sm text-gray-600 mt-1">
-                                ⏰ Scadenza: {new Date(task.dataScadenza).toLocaleDateString('it-IT')}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex gap-2">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(task.priorita)}`}>
-                              {task.priorita}
-                            </span>
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(task.stato)}`}>
-                              {task.stato.replace('_', ' ')}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </main>
+          )}
+        </div>
+      </div>
 
       {/* Event Details Modal */}
       {showEventModal && selectedEvent && (
@@ -658,144 +473,59 @@ export default function CalendarioPage() {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
           >
             <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-3">
-                  <div className={`p-3 rounded-full ${
-                    selectedEvent.type === 'appuntamento' 
-                      ? 'bg-blue-100 text-blue-600' 
-                      : 'bg-purple-100 text-purple-600'
-                  }`}>
-                    {selectedEvent.type === 'appuntamento' ? (
-                      <CalendarIcon className="h-6 w-6" />
-                    ) : (
-                      <CheckSquare className="h-6 w-6" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      {selectedEvent.type === 'appuntamento' ? 'Appuntamento' : 'Task'}
-                    </h3>
-                    <p className="text-gray-500 text-sm">
-                      {new Date(selectedEvent.event.start).toLocaleDateString('it-IT', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-                </div>
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {selectedEvent.title}
+                </h2>
                 <button
                   onClick={() => setShowEventModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  ×
                 </button>
               </div>
 
               <div className="space-y-4">
-                {selectedEvent.type === 'appuntamento' ? (
-                  <>
-                    <div>
-                      <h4 className="font-medium text-gray-700 mb-1">Cliente</h4>
-                      <p className="text-gray-900">{selectedEvent.data.leadNome}</p>
+                {selectedEvent.extendedProps.type === 'appuntamento' ? (
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-2">Dettagli Appuntamento</h3>
+                    <div className="space-y-2 text-sm">
+                      <p><strong>Cliente:</strong> {selectedEvent.extendedProps.data.leadNome}</p>
+                      <p><strong>Località:</strong> {selectedEvent.extendedProps.data.leadLocalita}</p>
+                      <p><strong>Tipo:</strong> {selectedEvent.extendedProps.data.tipo}</p>
+                      {selectedEvent.extendedProps.data.luogo && (
+                        <p><strong>Luogo:</strong> {selectedEvent.extendedProps.data.luogo}</p>
+                      )}
+                      {selectedEvent.extendedProps.data.note && (
+                        <p><strong>Note:</strong> {selectedEvent.extendedProps.data.note}</p>
+                      )}
                     </div>
-                    <div>
-                      <h4 className="font-medium text-gray-700 mb-1">Tipo</h4>
-                      <p className="text-gray-900">{selectedEvent.data.tipo}</p>
-                    </div>
-                    {selectedEvent.data.luogo && (
-                      <div>
-                        <h4 className="font-medium text-gray-700 mb-1 flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
-                          Luogo
-                        </h4>
-                        <p className="text-gray-900">{selectedEvent.data.luogo}</p>
-                      </div>
-                    )}
-                    {selectedEvent.data.note && (
-                      <div>
-                        <h4 className="font-medium text-gray-700 mb-1">Note</h4>
-                        <p className="text-gray-900">{selectedEvent.data.note}</p>
-                      </div>
-                    )}
-                    <div>
-                      <h4 className="font-medium text-gray-700 mb-1">Stato</h4>
-                      <span className={`badge ${
-                        selectedEvent.data.completato ? 'badge-success' : 'badge-primary'
-                      }`}>
-                        {selectedEvent.data.completato ? 'Completato' : 'In programma'}
-                      </span>
-                    </div>
-                  </>
+                  </div>
                 ) : (
-                  <>
-                    <div>
-                      <h4 className="font-medium text-gray-700 mb-1">Titolo</h4>
-                      <p className="text-gray-900">{selectedEvent.data.titolo}</p>
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-2">Dettagli Task</h3>
+                    <div className="space-y-2 text-sm">
+                      <p><strong>Tipo:</strong> {selectedEvent.extendedProps.data.tipo}</p>
+                      <p><strong>Priorità:</strong> {selectedEvent.extendedProps.data.priorita}</p>
+                      <p><strong>Stato:</strong> {selectedEvent.extendedProps.data.stato}</p>
+                      {selectedEvent.extendedProps.data.descrizione && (
+                        <p><strong>Descrizione:</strong> {selectedEvent.extendedProps.data.descrizione}</p>
+                      )}
                     </div>
-                    {selectedEvent.data.descrizione && (
-                      <div>
-                        <h4 className="font-medium text-gray-700 mb-1">Descrizione</h4>
-                        <p className="text-gray-900">{selectedEvent.data.descrizione}</p>
-                      </div>
-                    )}
-                    <div>
-                      <h4 className="font-medium text-gray-700 mb-1">Priorità</h4>
-                      <span className={`badge ${
-                        selectedEvent.data.priorita === 'urgente' ? 'badge-error' :
-                        selectedEvent.data.priorita === 'alta' ? 'badge-warning' :
-                        selectedEvent.data.priorita === 'media' ? 'badge-primary' :
-                        'badge-gray'
-                      }`}>
-                        {selectedEvent.data.priorita}
-                      </span>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-700 mb-1">Stato</h4>
-                      <span className={`badge ${
-                        selectedEvent.data.stato === 'completato' ? 'badge-success' :
-                        selectedEvent.data.stato === 'in_corso' ? 'badge-warning' :
-                        'badge-primary'
-                      }`}>
-                        {selectedEvent.data.stato.replace('_', ' ')}
-                      </span>
-                    </div>
-                  </>
+                  </div>
                 )}
               </div>
 
-              <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
-                <Button
-                  className="btn-secondary flex-1"
-                  onClick={() => {
-                    const editUrl = selectedEvent.type === 'appuntamento' 
-                      ? `/dashboard/leads/${selectedEvent.data.leadId}` 
-                      : `/dashboard/tasks`
-                    window.open(editUrl, '_blank')
-                  }}
-                >
-                  <Edit3 className="h-4 w-4 mr-1" />
+              <div className="flex gap-3 mt-6">
+                <Button className="btn-primary">
+                  <Edit3 className="h-4 w-4 mr-2" />
                   Modifica
                 </Button>
-                <Button
-                  className="btn-danger flex-1"
-                  onClick={() => {
-                    if (confirm('Sei sicuro di voler eliminare questo evento?')) {
-                      // Implementa eliminazione
-                      setShowEventModal(false)
-                      toast.success('Evento eliminato!')
-                    }
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
+                <Button className="btn-danger">
+                  <Trash2 className="h-4 w-4 mr-2" />
                   Elimina
                 </Button>
               </div>

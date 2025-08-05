@@ -184,82 +184,29 @@ export default function LeadsPage() {
   }
 
   return (
-    <div className="min-h-screen gradient-primary">
-      {/* Header */}
-      <motion.header 
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="glass border-b border-white/20"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-6 gap-4">
-            <motion.div 
-              className="flex items-center"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Link href="/dashboard">
-                <Button className="btn-secondary mr-4">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Dashboard
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-gradient text-2xl lg:text-3xl font-bold">
-                  👥 Gestione Leads
-                </h1>
-                <div className="flex items-center gap-4 mt-1">
-                  <p className="text-gray-600 text-sm lg:text-base">Visualizza e gestisci tutte le leads</p>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Users className="h-4 w-4" />
-                    <span>{leads.length} leads totali</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-            
-            <motion.div 
-              className="flex items-center gap-3"
-              initial={{ x: 20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              <div className="hidden lg:flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                  <span className="text-gray-600">{leads.filter(l => l.status === 'lead').length} Leads</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
-                  <span className="text-gray-600">{leads.filter(l => l.status === 'cliente_attesa').length} In Attesa</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                  <span className="text-gray-600">{leads.filter(l => l.status === 'cliente_confermato').length} Confermati</span>
-                </div>
-              </div>
-              
-              <Link href="/dashboard/leads/new">
-                <Button className="btn-primary">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nuova Lead
-                </Button>
-              </Link>
-            </motion.div>
-          </div>
+    <div>
+      {/* Page Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Gestione Leads</h1>
+          <p className="text-gray-600 mt-1">
+            {leads.length} leads totali • {leads.filter(l => l.status === 'lead').length} nuove • {leads.filter(l => l.status === 'cliente_attesa').length} in attesa • {leads.filter(l => l.status === 'cliente_confermato').length} confermati
+          </p>
         </div>
-      </motion.header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* Advanced Filters */}
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="card shadow-elegant mb-6"
-        >
+        <Link href="/dashboard/leads/new">
+          <Button className="btn-primary">
+            <Plus className="h-4 w-4 mr-2" />
+            Nuova Lead
+          </Button>
+        </Link>
+      </div>
+      {/* Advanced Filters */}
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="card mb-6"
+      >
           <div className="p-6">
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Search */}
@@ -317,8 +264,8 @@ export default function LeadsPage() {
           </div>
         </motion.div>
 
-        {/* Leads Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Leads Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredLeads.map((lead, index) => (
             <motion.div 
               key={lead.id}
@@ -500,8 +447,8 @@ export default function LeadsPage() {
           ))}
         </div>
 
-        {/* Empty State */}
-        {filteredLeads.length === 0 && (
+      {/* Empty State */}
+      {filteredLeads.length === 0 && (
           <motion.div 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -531,8 +478,7 @@ export default function LeadsPage() {
               </div>
             </div>
           </motion.div>
-        )}
-      </main>
+      )}
     </div>
   )
 }
