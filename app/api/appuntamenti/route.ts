@@ -44,10 +44,45 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const newAppuntamento = await db.insert(appuntamenti).values(body).returning();
+    console.log('Received appuntamento data:', body);
+    
+    // Validazione dei dati
+    if (!body.leadId || body.leadId <= 0) {
+      return NextResponse.json({ error: 'Lead ID è richiesto e deve essere valido' }, { status: 400 });
+    }
+    
+    if (!body.data) {
+      return NextResponse.json({ error: 'Data è richiesta' }, { status: 400 });
+    }
+
+    // Verifica che il lead esista
+    const leadExists = await db.select().from(leads).where(eq(leads.id, body.leadId)).limit(1);
+    if (leadExists.length === 0) {
+      return NextResponse.json({ error: 'Lead non trovato' }, { status: 404 });
+    }
+
+    // Prepara i dati per l'inserimento
+    const appointmentData = {
+      leadId: parseInt(body.leadId),
+      data: new Date(body.data),
+      tipo: body.tipo || null,
+      luogo: body.luogo || null,
+      note: body.note || null,
+      completato: Boolean(body.completato),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    console.log('Inserting appointment data:', appointmentData);
+    
+    const newAppuntamento = await db.insert(appuntamenti).values(appointmentData).returning();
     return NextResponse.json(newAppuntamento[0], { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    console.error('Error creating appuntamento:', error);
+    return NextResponse.json({ 
+      error: 'Database error', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 });
   }
 }
 

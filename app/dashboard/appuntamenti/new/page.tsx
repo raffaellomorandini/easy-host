@@ -56,8 +56,29 @@ function NewAppuntamentoForm() {
     e.preventDefault()
     if (!session) return
 
+    // Validazione lato client
+    if (!formData.leadId || formData.leadId <= 0) {
+      alert('Seleziona una lead valida')
+      return
+    }
+
+    if (!formData.data) {
+      alert('Inserisci una data per l\'appuntamento')
+      return
+    }
+
+    if (!formData.tipo) {
+      alert('Inserisci il tipo di appuntamento')
+      return
+    }
+
     setLoading(true)
     try {
+      console.log('Sending appointment data:', {
+        ...formData,
+        data: new Date(formData.data).toISOString()
+      })
+
       const response = await fetch('/api/appuntamenti', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -70,7 +91,9 @@ function NewAppuntamentoForm() {
       if (response.ok) {
         router.push('/dashboard/appuntamenti')
       } else {
-        alert('Errore durante il salvataggio')
+        const errorData = await response.json()
+        console.error('Server error:', errorData)
+        alert(`Errore durante il salvataggio: ${errorData.error || 'Errore sconosciuto'}`)
       }
     } catch (error) {
       console.error('Error creating appuntamento:', error)
