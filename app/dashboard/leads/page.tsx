@@ -7,7 +7,6 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import { 
-  ArrowLeft, 
   Edit, 
   Eye, 
   Phone, 
@@ -25,7 +24,9 @@ import {
   AlertCircle,
   TrendingUp,
   MoreVertical,
-  ExternalLink
+  ExternalLink,
+  PhoneCall,
+  PhoneOff
 } from 'lucide-react'
 
 interface Lead {
@@ -48,6 +49,7 @@ export default function LeadsPage() {
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'lead' | 'cliente_attesa' | 'cliente_confermato'>('all')
+  const [contactFilter, setContactFilter] = useState<'all' | 'contattato' | 'non_contattato'>('all')
   const [search, setSearch] = useState('')
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function LeadsPage() {
 
   useEffect(() => {
     filterLeads()
-  }, [leads, filter, search])
+  }, [leads, filter, contactFilter, search])
 
   const fetchLeads = async () => {
     try {
@@ -79,6 +81,12 @@ export default function LeadsPage() {
 
     if (filter !== 'all') {
       filtered = filtered.filter(lead => lead.status === filter)
+    }
+
+    if (contactFilter !== 'all') {
+      filtered = filtered.filter(lead => 
+        contactFilter === 'contattato' ? lead.contattato : !lead.contattato
+      )
     }
 
     if (search) {
@@ -178,9 +186,11 @@ export default function LeadsPage() {
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">
-      <div className="text-lg">Caricamento leads...</div>
-    </div>
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-lg">Caricamento leads...</div>
+      </div>
+    )
   }
 
   return (
@@ -208,9 +218,9 @@ export default function LeadsPage() {
         className="card mb-6"
       >
           <div className="p-6">
-            <div className="flex flex-col lg:flex-row gap-6">
+            <div className="flex flex-col gap-6">
               {/* Search */}
-              <div className="flex-1">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Ricerca avanzata
                 </label>
@@ -226,38 +236,75 @@ export default function LeadsPage() {
                 </div>
               </div>
 
-              {/* Status Filter */}
-              <div className="lg:w-auto">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filtra per stato
-                </label>
-                <div className="flex gap-2 flex-wrap">
-                  {[
-                    { key: 'all', label: 'Tutti', count: leads.length, color: 'gray' },
-                    { key: 'lead', label: 'Leads', count: leads.filter(l => l.status === 'lead').length, color: 'blue' },
-                    { key: 'cliente_attesa', label: 'In Attesa', count: leads.filter(l => l.status === 'cliente_attesa').length, color: 'yellow' },
-                    { key: 'cliente_confermato', label: 'Confermati', count: leads.filter(l => l.status === 'cliente_confermato').length, color: 'green' }
-                  ].map(({ key, label, count, color }) => (
-                    <Button
-                      key={key}
-                      onClick={() => setFilter(key as any)}
-                      size="sm"
-                      className={`relative ${
-                        filter === key 
-                          ? 'btn-primary' 
-                          : 'btn-secondary'
-                      }`}
-                    >
-                      {label} 
-                      <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                        filter === key 
-                          ? 'bg-white/20 text-white' 
-                          : `bg-${color}-100 text-${color}-700`
-                      }`}>
-                        {count}
-                      </span>
-                    </Button>
-                  ))}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Status Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Filtra per stato
+                  </label>
+                  <div className="flex gap-2 flex-wrap">
+                    {[
+                      { key: 'all', label: 'Tutti', count: leads.length, color: 'gray' },
+                      { key: 'lead', label: 'Leads', count: leads.filter(l => l.status === 'lead').length, color: 'blue' },
+                      { key: 'cliente_attesa', label: 'In Attesa', count: leads.filter(l => l.status === 'cliente_attesa').length, color: 'yellow' },
+                      { key: 'cliente_confermato', label: 'Confermati', count: leads.filter(l => l.status === 'cliente_confermato').length, color: 'green' }
+                    ].map(({ key, label, count, color }) => (
+                      <Button
+                        key={key}
+                        onClick={() => setFilter(key as any)}
+                        size="sm"
+                        className={`relative ${
+                          filter === key 
+                            ? 'btn-primary' 
+                            : 'btn-secondary'
+                        }`}
+                      >
+                        {label} 
+                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                          filter === key 
+                            ? 'bg-white/20 text-white' 
+                            : `bg-${color}-100 text-${color}-700`
+                        }`}>
+                          {count}
+                        </span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Contact Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Stato contatto
+                  </label>
+                  <div className="flex gap-2 flex-wrap">
+                    {[
+                      { key: 'all', label: 'Tutti', count: leads.length, color: 'gray', icon: Users },
+                      { key: 'contattato', label: 'Contattati', count: leads.filter(l => l.contattato).length, color: 'green', icon: PhoneCall },
+                      { key: 'non_contattato', label: 'Non Contattati', count: leads.filter(l => !l.contattato).length, color: 'red', icon: PhoneOff }
+                    ].map(({ key, label, count, color, icon: Icon }) => (
+                      <Button
+                        key={key}
+                        onClick={() => setContactFilter(key as any)}
+                        size="sm"
+                        className={`relative ${
+                          contactFilter === key 
+                            ? 'btn-primary' 
+                            : 'btn-secondary'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4 mr-1" />
+                        {label} 
+                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                          contactFilter === key 
+                            ? 'bg-white/20 text-white' 
+                            : `bg-${color}-100 text-${color}-700`
+                        }`}>
+                          {count}
+                        </span>
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

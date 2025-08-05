@@ -220,7 +220,7 @@ export default function TasksPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <div className="text-lg">Caricamento tasks...</div>
       </div>
     )

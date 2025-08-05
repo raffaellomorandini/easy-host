@@ -7,7 +7,6 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import { 
-  ArrowLeft, 
   Plus, 
   Calendar as CalendarIcon, 
   List, 
@@ -231,7 +230,7 @@ export default function CalendarioPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <div className="text-lg">Caricamento calendario...</div>
       </div>
     )

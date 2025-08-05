@@ -7,7 +7,6 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import { 
-  ArrowLeft, 
   Calendar, 
   Clock, 
   MapPin, 
@@ -128,9 +127,11 @@ export default function AppuntamentiPage() {
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">
-      <div className="text-lg">Caricamento appuntamenti...</div>
-    </div>
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-lg">Caricamento appuntamenti...</div>
+      </div>
+    )
   }
 
   return (
@@ -148,16 +149,16 @@ export default function AppuntamentiPage() {
             <Button className="btn-secondary">
               <Calendar className="h-4 w-4 mr-2" />
               Calendario
-            </Button>
-          </Link>
-          <Link href="/dashboard/appuntamenti/new">
+                </Button>
+              </Link>
+            <Link href="/dashboard/appuntamenti/new">
             <Button className="btn-primary">
-              <Plus className="h-4 w-4 mr-2" />
-              Nuovo Appuntamento
-            </Button>
-          </Link>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuovo Appuntamento
+              </Button>
+            </Link>
+          </div>
         </div>
-      </div>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white overflow-hidden shadow rounded-lg">
@@ -271,10 +272,10 @@ export default function AppuntamentiPage() {
                     { key: 'completed', label: 'Completati', count: appuntamenti.filter(a => a.completato).length, color: 'green', icon: CheckCircle },
                     { key: 'overdue', label: 'Scaduti', count: appuntamenti.filter(a => !a.completato && new Date(a.data) < new Date()).length, color: 'red', icon: AlertCircle }
                   ].map(({ key, label, count, color, icon: Icon }) => (
-                    <Button
+            <Button
                       key={key}
                       onClick={() => setFilter(key as any)}
-                      size="sm"
+              size="sm"
                       className={`relative flex items-center gap-2 ${
                         filter === key 
                           ? 'btn-primary' 
@@ -290,16 +291,16 @@ export default function AppuntamentiPage() {
                       }`}>
                         {count}
                       </span>
-                    </Button>
+            </Button>
                   ))}
                 </div>
               </div>
-            </div>
           </div>
+        </div>
         </motion.div>
 
-      {/* Appuntamenti List */}
-      <div className="space-y-4">
+        {/* Appuntamenti List */}
+        <div className="space-y-4">
           {filteredAppuntamenti.map((appuntamento, index) => {
             const isOverdue = !appuntamento.completato && new Date(appuntamento.data) < new Date()
             const isUpcoming = !appuntamento.completato && new Date(appuntamento.data) >= new Date()
@@ -335,10 +336,10 @@ export default function AppuntamentiPage() {
                               <Calendar className="h-6 w-6 text-white" />
                             )}
                           </div>
-                          <div>
+                        <div>
                             <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                               {appuntamento.leadNome} - {appuntamento.tipo}
-                            </h3>
+                          </h3>
                             <span 
                               className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
                                 appuntamento.completato 
@@ -375,7 +376,7 @@ export default function AppuntamentiPage() {
                             </p>
                           </div>
                         </div>
-                        
+
                         {appuntamento.luogo && (
                           <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-purple-50">
@@ -461,8 +462,8 @@ export default function AppuntamentiPage() {
           })}
         </div>
 
-      {/* Empty State */}
-      {filteredAppuntamenti.length === 0 && (
+        {/* Empty State */}
+        {filteredAppuntamenti.length === 0 && (
           <motion.div 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -473,7 +474,7 @@ export default function AppuntamentiPage() {
               <div className="p-8">
                 <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto mb-6">
                   <CalendarDays className="h-8 w-8 text-white" />
-                </div>
+            </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   {filter !== 'all' ? 'Nessun appuntamento trovato' : 'Inizia a programmare'}
                 </h3>
@@ -484,9 +485,9 @@ export default function AppuntamentiPage() {
                   }
                 </p>
                 <div className="flex gap-3 justify-center">
-                  <Link href="/dashboard/appuntamenti/new">
+            <Link href="/dashboard/appuntamenti/new">
                     <Button className="btn-primary">
-                      <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 mr-2" />
                       {filter !== 'all' ? 'Nuovo Appuntamento' : 'Primo Appuntamento'}
                     </Button>
                   </Link>
@@ -494,13 +495,13 @@ export default function AppuntamentiPage() {
                     <Button className="btn-secondary">
                       <Calendar className="h-4 w-4 mr-2" />
                       Vai al Calendario
-                    </Button>
-                  </Link>
-                </div>
+              </Button>
+            </Link>
+          </div>
               </div>
             </div>
           </motion.div>
-      )}
+        )}
     </div>
   )
 }
