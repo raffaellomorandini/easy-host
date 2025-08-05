@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowLeft, Edit, Eye, Phone, Mail, MapPin, Calendar, Plus, Filter, Search } from 'lucide-react'
+import { ArrowLeft, Edit, Eye, Phone, Mail, MapPin, Calendar, Plus, Filter, Search, Trash2 } from 'lucide-react'
 
 interface Lead {
   id: number
@@ -100,6 +100,35 @@ export default function LeadsPage() {
       }
     } catch (error) {
       console.error('Error updating lead:', error)
+    }
+  }
+
+  const deleteLead = async (leadId: number, leadName: string) => {
+    // Conferma eliminazione
+    const confirmed = window.confirm(
+      `Sei sicuro di voler eliminare la lead "${leadName}"?\n\nQuesta azione eliminerà anche tutti gli appuntamenti associati e non può essere annullata.`
+    )
+    
+    if (!confirmed) return
+
+    try {
+      const response = await fetch('/api/leads', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: leadId })
+      })
+
+      if (response.ok) {
+        fetchLeads() // Ricarica i dati
+        // Opzionale: mostra un messaggio di successo
+        alert('Lead eliminata con successo!')
+      } else {
+        const error = await response.json()
+        alert(`Errore durante l'eliminazione: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error deleting lead:', error)
+      alert('Errore durante l\'eliminazione della lead')
     }
   }
 
@@ -332,6 +361,14 @@ export default function LeadsPage() {
                       <Calendar className="h-4 w-4" />
                     </Button>
                   </Link>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => deleteLead(lead.id, lead.nome)}
+                    className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </div>
