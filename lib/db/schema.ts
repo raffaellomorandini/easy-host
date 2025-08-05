@@ -80,7 +80,25 @@ export const appuntamenti = pgTable('appuntamenti', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// Tabella per i tasks/eventi generali
+export const tasks = pgTable('tasks', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  titolo: varchar('titolo', { length: 255 }).notNull(),
+  descrizione: text('descrizione'),
+  tipo: varchar('tipo', { length: 50 }).notNull(), // 'task', 'reminder', 'call', 'meeting', 'follow-up', 'personal'
+  priorita: varchar('priorita', { length: 20 }).default('media'), // 'bassa', 'media', 'alta', 'urgente'
+  stato: varchar('stato', { length: 20 }).default('da_fare'), // 'da_fare', 'in_corso', 'completato', 'annullato'
+  dataScadenza: timestamp('data_scadenza'),
+  completato: boolean('completato').default(false),
+  colore: varchar('colore', { length: 7 }).default('#3b82f6'), // hex color for calendar
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 export type Lead = typeof leads.$inferSelect;
 export type NewLead = typeof leads.$inferInsert;
 export type Appuntamento = typeof appuntamenti.$inferSelect;
 export type NewAppuntamento = typeof appuntamenti.$inferInsert;
+export type Task = typeof tasks.$inferSelect;
+export type NewTask = typeof tasks.$inferInsert;
