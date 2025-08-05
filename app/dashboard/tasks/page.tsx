@@ -4,7 +4,9 @@ import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Edit, Trash2, Check, Clock, Flag, Filter, Search } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { toast } from 'react-hot-toast'
+import { ArrowLeft, Plus, Edit, Trash2, Check, Clock, Flag, Filter, Search, CheckSquare } from 'lucide-react'
 
 interface Task {
   id: number
@@ -224,32 +226,69 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen gradient-primary">
       {/* Header */}
-      <header className="bg-white shadow">
+      <motion.header 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="glass border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-6 gap-4">
+            <motion.div 
+              className="flex items-center"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
               <Link href="/dashboard">
-                <Button variant="outline" size="sm" className="mr-4">
+                <Button className="btn-secondary mr-4">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Dashboard
                 </Button>
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  Task Manager
+                <h1 className="text-gradient text-2xl lg:text-3xl font-bold">
+                  📋 Task Manager
                 </h1>
-                <p className="text-gray-600">Gestisci i tuoi task e promemoria</p>
+                <div className="flex items-center gap-4 mt-1">
+                  <p className="text-gray-600 text-sm lg:text-base">Gestisci i tuoi task e promemoria</p>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <CheckSquare className="h-4 w-4" />
+                    <span>{tasks.length} task totali</span>
+                  </div>
+                </div>
               </div>
-            </div>
-            <Button onClick={() => setShowNewTaskForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuovo Task
-            </Button>
+            </motion.div>
+            
+            <motion.div 
+              className="flex items-center gap-3"
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="hidden lg:flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-red-500"></div>
+                  <span className="text-gray-600">{tasks.filter(t => t.priorita === 'urgente' && t.stato !== 'completato').length} Urgenti</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                  <span className="text-gray-600">{tasks.filter(t => t.stato === 'da_fare').length} Da fare</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                  <span className="text-gray-600">{tasks.filter(t => t.stato === 'completato').length} Completati</span>
+                </div>
+              </div>
+              
+              <Button onClick={() => setShowNewTaskForm(true)} className="btn-primary">
+                <Plus className="h-4 w-4 mr-2" />
+                Nuovo Task
+              </Button>
+            </motion.div>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* New Task Form */}
       {showNewTaskForm && (
@@ -343,7 +382,13 @@ export default function TasksPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {/* Filters and Search */}
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="card shadow-elegant mb-6"
+        >
+          <div className="p-6">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search */}
             <div className="flex-1">
@@ -431,10 +476,13 @@ export default function TasksPage() {
 
         {/* Tasks List */}
         <div className="space-y-4">
-          {filteredTasks.map((task) => (
-            <div 
-              key={task.id} 
-              className={`bg-white rounded-lg shadow-sm border-l-4 hover:shadow-md transition-shadow ${
+          {filteredTasks.map((task, index) => (
+            <motion.div 
+              key={task.id}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 + index * 0.1, duration: 0.4 }}
+              className={`card card-hover group overflow-hidden border-l-4 ${
                 task.completato ? 'opacity-75' : ''
               }`}
               style={{ borderLeftColor: task.colore }}
@@ -532,7 +580,7 @@ export default function TasksPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
 

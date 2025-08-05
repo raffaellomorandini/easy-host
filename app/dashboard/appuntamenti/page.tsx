@@ -4,7 +4,29 @@ import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowLeft, Calendar, Clock, MapPin, User, Plus, CheckCircle, X } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { toast } from 'react-hot-toast'
+import { 
+  ArrowLeft, 
+  Calendar, 
+  Clock, 
+  MapPin, 
+  User, 
+  Plus, 
+  CheckCircle, 
+  X,
+  Filter,
+  Search,
+  CalendarDays,
+  AlertCircle,
+  Phone,
+  Mail,
+  Edit,
+  Eye,
+  Trash2,
+  Star,
+  TrendingUp
+} from 'lucide-react'
 
 interface Appuntamento {
   id: number
@@ -25,6 +47,7 @@ export default function AppuntamentiPage() {
   const [filteredAppuntamenti, setFilteredAppuntamenti] = useState<Appuntamento[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed' | 'overdue'>('all')
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     if (session) {
@@ -34,7 +57,7 @@ export default function AppuntamentiPage() {
 
   useEffect(() => {
     filterAppuntamenti()
-  }, [appuntamenti, filter])
+  }, [appuntamenti, filter, search])
 
   const fetchAppuntamenti = async () => {
     try {
@@ -81,9 +104,13 @@ export default function AppuntamentiPage() {
 
       if (response.ok) {
         fetchAppuntamenti()
+        toast.success(completato ? 'Appuntamento riaperto!' : 'Appuntamento completato!')
+      } else {
+        toast.error('Errore durante l\'aggiornamento')
       }
     } catch (error) {
       console.error('Error updating appuntamento:', error)
+      toast.error('Errore durante l\'aggiornamento')
     }
   }
 
@@ -107,34 +134,79 @@ export default function AppuntamentiPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen gradient-primary">
       {/* Header */}
-      <header className="bg-white shadow">
+      <motion.header 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="glass border-b border-white/20"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-6 gap-4">
+            <motion.div 
+              className="flex items-center"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
               <Link href="/dashboard">
-                <Button variant="outline" size="sm" className="mr-4">
+                <Button className="btn-secondary mr-4">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Dashboard
                 </Button>
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  Gestione Appuntamenti
+                <h1 className="text-gradient text-2xl lg:text-3xl font-bold">
+                  📅 Gestione Appuntamenti
                 </h1>
-                <p className="text-gray-600">Visualizza e gestisci tutti gli appuntamenti</p>
+                <div className="flex items-center gap-4 mt-1">
+                  <p className="text-gray-600 text-sm lg:text-base">Visualizza e gestisci tutti gli appuntamenti</p>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <CalendarDays className="h-4 w-4" />
+                    <span>{appuntamenti.length} appuntamenti totali</span>
+                  </div>
+                </div>
               </div>
-            </div>
-            <Link href="/dashboard/appuntamenti/new">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Nuovo Appuntamento
-              </Button>
-            </Link>
+            </motion.div>
+            
+            <motion.div 
+              className="flex items-center gap-3"
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="hidden lg:flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                  <span className="text-gray-600">{appuntamenti.filter(a => !a.completato && new Date(a.data) >= new Date()).length} Prossimi</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                  <span className="text-gray-600">{appuntamenti.filter(a => a.completato).length} Completati</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-red-500"></div>
+                  <span className="text-gray-600">{appuntamenti.filter(a => !a.completato && new Date(a.data) < new Date()).length} Scaduti</span>
+                </div>
+              </div>
+              
+              <Link href="/dashboard/calendario">
+                <Button className="btn-secondary">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Calendario
+                </Button>
+              </Link>
+              
+              <Link href="/dashboard/appuntamenti/new">
+                <Button className="btn-primary">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nuovo Appuntamento
+                </Button>
+              </Link>
+            </motion.div>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -213,155 +285,273 @@ export default function AppuntamentiPage() {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <div className="flex gap-2">
-            <Button
-              variant={filter === 'all' ? 'default' : 'outline'}
-              onClick={() => setFilter('all')}
-              size="sm"
-            >
-              Tutti ({appuntamenti.length})
-            </Button>
-            <Button
-              variant={filter === 'upcoming' ? 'default' : 'outline'}
-              onClick={() => setFilter('upcoming')}
-              size="sm"
-            >
-              Prossimi ({appuntamenti.filter(a => !a.completato && new Date(a.data) >= new Date()).length})
-            </Button>
-            <Button
-              variant={filter === 'completed' ? 'default' : 'outline'}
-              onClick={() => setFilter('completed')}
-              size="sm"
-            >
-              Completati ({appuntamenti.filter(a => a.completato).length})
-            </Button>
-            <Button
-              variant={filter === 'overdue' ? 'default' : 'outline'}
-              onClick={() => setFilter('overdue')}
-              size="sm"
-            >
-              Scaduti ({appuntamenti.filter(a => !a.completato && new Date(a.data) < new Date()).length})
-            </Button>
+        {/* Advanced Filters */}
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="card shadow-elegant mb-6"
+        >
+          <div className="p-6">
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Search */}
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ricerca appuntamenti
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="text"
+                    placeholder="Cerca per cliente, tipo, luogo o note..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="form-input pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div className="lg:w-auto">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filtra per stato
+                </label>
+                <div className="flex gap-2 flex-wrap">
+                  {[
+                    { key: 'all', label: 'Tutti', count: appuntamenti.length, color: 'gray', icon: CalendarDays },
+                    { key: 'upcoming', label: 'Prossimi', count: appuntamenti.filter(a => !a.completato && new Date(a.data) >= new Date()).length, color: 'blue', icon: Clock },
+                    { key: 'completed', label: 'Completati', count: appuntamenti.filter(a => a.completato).length, color: 'green', icon: CheckCircle },
+                    { key: 'overdue', label: 'Scaduti', count: appuntamenti.filter(a => !a.completato && new Date(a.data) < new Date()).length, color: 'red', icon: AlertCircle }
+                  ].map(({ key, label, count, color, icon: Icon }) => (
+                    <Button
+                      key={key}
+                      onClick={() => setFilter(key as any)}
+                      size="sm"
+                      className={`relative flex items-center gap-2 ${
+                        filter === key 
+                          ? 'btn-primary' 
+                          : 'btn-secondary'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {label} 
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${
+                        filter === key 
+                          ? 'bg-white/20 text-white' 
+                          : `bg-${color}-100 text-${color}-700`
+                      }`}>
+                        {count}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Appuntamenti List */}
         <div className="space-y-4">
-          {filteredAppuntamenti.map((appuntamento) => {
-            const statusInfo = getStatusInfo(appuntamento)
-            const Icon = statusInfo.icon
+          {filteredAppuntamenti.map((appuntamento, index) => {
+            const isOverdue = !appuntamento.completato && new Date(appuntamento.data) < new Date()
+            const isUpcoming = !appuntamento.completato && new Date(appuntamento.data) >= new Date()
             
             return (
-              <div key={appuntamento.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <motion.div 
+                key={appuntamento.id}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 + index * 0.1, duration: 0.4 }}
+                className={`card card-hover group overflow-hidden border-l-4 ${
+                  appuntamento.completato ? 'opacity-75' : ''
+                }`}
+                style={{ borderLeftColor: isOverdue ? '#ef4444' : appuntamento.completato ? '#10b981' : '#3b82f6' }}
+              >
                 <div className="p-6">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {appuntamento.tipo}
-                          </h3>
-                          <div className="flex items-center text-sm text-gray-600 mt-1">
-                            <User className="h-4 w-4 mr-1" />
-                            <Link 
-                              href={`/dashboard/leads/${appuntamento.leadId}`}
-                              className="text-blue-600 hover:text-blue-800 font-medium"
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-12 w-12 rounded-full flex items-center justify-center shadow-lg ${
+                            appuntamento.completato 
+                              ? 'bg-gradient-to-br from-green-500 to-green-600' 
+                              : isOverdue 
+                              ? 'bg-gradient-to-br from-red-500 to-red-600' 
+                              : 'bg-gradient-to-br from-blue-500 to-blue-600'
+                          }`}>
+                            {appuntamento.completato ? (
+                              <CheckCircle className="h-6 w-6 text-white" />
+                            ) : isOverdue ? (
+                              <AlertCircle className="h-6 w-6 text-white" />
+                            ) : (
+                              <Calendar className="h-6 w-6 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                              {appuntamento.leadNome} - {appuntamento.tipo}
+                            </h3>
+                            <span 
+                              className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                                appuntamento.completato 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : isOverdue 
+                                  ? 'bg-red-100 text-red-800' 
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}
                             >
-                              {appuntamento.leadNome}
-                            </Link>
-                            <span className="mx-2">•</span>
-                            <span>{appuntamento.leadLocalita}</span>
+                              {appuntamento.completato ? '✅ Completato' : isOverdue ? '⚠️ Scaduto' : '📅 In programma'}
+                            </span>
                           </div>
                         </div>
-                        <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full border ${statusInfo.color}`}>
-                          <Icon className="h-4 w-4 mr-1" />
-                          {statusInfo.text}
-                        </span>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Clock className="h-4 w-4 mr-2" />
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-blue-50">
+                            <Clock className="h-4 w-4 text-blue-600" />
+                          </div>
                           <div>
-                            <div className="font-medium">
+                            <p className="font-medium text-gray-900">
                               {new Date(appuntamento.data).toLocaleDateString('it-IT', {
-                                weekday: 'long',
+                                weekday: 'short',
                                 day: 'numeric',
-                                month: 'long',
-                                year: 'numeric'
+                                month: 'short'
                               })}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              alle {new Date(appuntamento.data).toLocaleTimeString('it-IT', {
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(appuntamento.data).toLocaleTimeString('it-IT', {
                                 hour: '2-digit',
                                 minute: '2-digit'
                               })}
-                            </div>
+                            </p>
                           </div>
                         </div>
-
+                        
                         {appuntamento.luogo && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <MapPin className="h-4 w-4 mr-2" />
-                            <span>{appuntamento.luogo}</span>
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-purple-50">
+                              <MapPin className="h-4 w-4 text-purple-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">Luogo</p>
+                              <p className="text-sm text-gray-500">{appuntamento.luogo}</p>
+                            </div>
                           </div>
                         )}
+                        
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-green-50">
+                            <User className="h-4 w-4 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Cliente</p>
+                            <p className="text-sm text-gray-500">{appuntamento.leadLocalita}</p>
+                          </div>
+                        </div>
                       </div>
 
                       {appuntamento.note && (
-                        <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 mb-4">
+                        <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-lg p-3 text-sm text-gray-700 mb-4 border border-gray-200">
+                          <p className="font-medium text-gray-900 mb-1">Note:</p>
                           {appuntamento.note}
                         </div>
                       )}
 
                       <div className="flex items-center justify-between">
-                        <label className="flex items-center text-sm">
+                        <label className="flex items-center text-sm group cursor-pointer">
                           <input
                             type="checkbox"
                             checked={appuntamento.completato}
                             onChange={() => toggleCompletato(appuntamento.id, appuntamento.completato)}
-                            className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0"
                           />
-                          <span className={appuntamento.completato ? 'text-green-600 font-medium' : 'text-gray-700'}>
-                            {appuntamento.completato ? 'Completato' : 'Marca come completato'}
+                          <span className={`font-medium transition-colors ${
+                            appuntamento.completato ? 'text-green-700' : 'text-gray-600 group-hover:text-gray-900'
+                          }`}>
+                            {appuntamento.completato ? '✅ Completato' : 'Segna come completato'}
                           </span>
                         </label>
 
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            size="sm"
+                            onClick={() => toggleCompletato(appuntamento.id, appuntamento.completato)}
+                            className={`group ${appuntamento.completato ? 'btn-success' : 'btn-primary'}`}
+                          >
+                            {appuntamento.completato ? (
+                              <>
+                                <X className="h-4 w-4 mr-1 group-hover:scale-110 transition-transform" />
+                                Riapri
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="h-4 w-4 mr-1 group-hover:scale-110 transition-transform" />
+                                Completa
+                              </>
+                            )}
+                          </Button>
+                          
                           <Link href={`/dashboard/leads/${appuntamento.leadId}`}>
-                            <Button variant="outline" size="sm">
+                            <Button className="btn-secondary group">
+                              <Eye className="h-4 w-4 mr-1 group-hover:scale-110 transition-transform" />
                               Vedi Lead
                             </Button>
                           </Link>
+
+                          <Button className="btn-secondary group">
+                            <Edit className="h-4 w-4 mr-1 group-hover:scale-110 transition-transform" />
+                            Modifica
+                          </Button>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )
           })}
         </div>
 
         {/* Empty State */}
         {filteredAppuntamenti.length === 0 && (
-          <div className="text-center py-12">
-            <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <div className="text-gray-500 text-lg mb-4">
-              {filter === 'all' ? 'Nessun appuntamento presente' : 
-               filter === 'upcoming' ? 'Nessun appuntamento programmato' :
-               filter === 'completed' ? 'Nessun appuntamento completato' :
-               'Nessun appuntamento scaduto'}
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-center py-16"
+          >
+            <div className="card max-w-md mx-auto">
+              <div className="p-8">
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto mb-6">
+                  <CalendarDays className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {filter !== 'all' ? 'Nessun appuntamento trovato' : 'Inizia a programmare'}
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {filter !== 'all' 
+                    ? 'Prova a modificare i filtri per trovare gli appuntamenti che stai cercando.' 
+                    : 'Aggiungi il tuo primo appuntamento per iniziare a organizzare i tuoi incontri con i clienti.'
+                  }
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Link href="/dashboard/appuntamenti/new">
+                    <Button className="btn-primary">
+                      <Plus className="h-4 w-4 mr-2" />
+                      {filter !== 'all' ? 'Nuovo Appuntamento' : 'Primo Appuntamento'}
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/calendario">
+                    <Button className="btn-secondary">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Vai al Calendario
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             </div>
-            <Link href="/dashboard/appuntamenti/new">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Crea Primo Appuntamento
-              </Button>
-            </Link>
-          </div>
+          </motion.div>
         )}
       </main>
     </div>

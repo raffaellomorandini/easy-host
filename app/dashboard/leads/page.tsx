@@ -4,7 +4,29 @@ import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowLeft, Edit, Eye, Phone, Mail, MapPin, Calendar, Plus, Filter, Search, Trash2 } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { toast } from 'react-hot-toast'
+import { 
+  ArrowLeft, 
+  Edit, 
+  Eye, 
+  Phone, 
+  Mail, 
+  MapPin, 
+  Calendar, 
+  Plus, 
+  Filter, 
+  Search, 
+  Trash2,
+  Users,
+  Star,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  TrendingUp,
+  MoreVertical,
+  ExternalLink
+} from 'lucide-react'
 
 interface Lead {
   id: number
@@ -81,9 +103,13 @@ export default function LeadsPage() {
 
       if (response.ok) {
         fetchLeads() // Ricarica i dati
+        toast.success('Status aggiornato con successo!')
+      } else {
+        toast.error('Errore durante l\'aggiornamento')
       }
     } catch (error) {
       console.error('Error updating lead:', error)
+      toast.error('Errore durante l\'aggiornamento')
     }
   }
 
@@ -97,9 +123,13 @@ export default function LeadsPage() {
 
       if (response.ok) {
         fetchLeads()
+        toast.success('Contatto aggiornato!')
+      } else {
+        toast.error('Errore durante l\'aggiornamento')
       }
     } catch (error) {
       console.error('Error updating lead:', error)
+      toast.error('Errore durante l\'aggiornamento')
     }
   }
 
@@ -120,15 +150,14 @@ export default function LeadsPage() {
 
       if (response.ok) {
         fetchLeads() // Ricarica i dati
-        // Opzionale: mostra un messaggio di successo
-        alert('Lead eliminata con successo!')
+        toast.success('Lead eliminata con successo!')
       } else {
         const error = await response.json()
-        alert(`Errore durante l'eliminazione: ${error.error}`)
+        toast.error(`Errore durante l'eliminazione: ${error.error}`)
       }
     } catch (error) {
       console.error('Error deleting lead:', error)
-      alert('Errore durante l\'eliminazione della lead')
+      toast.error('Errore durante l\'eliminazione della lead')
     }
   }
 
@@ -155,124 +184,212 @@ export default function LeadsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen gradient-primary">
       {/* Header */}
-      <header className="bg-white shadow">
+      <motion.header 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="glass border-b border-white/20"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-6 gap-4">
+            <motion.div 
+              className="flex items-center"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
               <Link href="/dashboard">
-                <Button variant="outline" size="sm" className="mr-4">
+                <Button className="btn-secondary mr-4">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Dashboard
                 </Button>
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  Gestione Leads
+                <h1 className="text-gradient text-2xl lg:text-3xl font-bold">
+                  👥 Gestione Leads
                 </h1>
-                <p className="text-gray-600">Visualizza e gestisci tutte le leads</p>
+                <div className="flex items-center gap-4 mt-1">
+                  <p className="text-gray-600 text-sm lg:text-base">Visualizza e gestisci tutte le leads</p>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Users className="h-4 w-4" />
+                    <span>{leads.length} leads totali</span>
+                  </div>
+                </div>
               </div>
-            </div>
-            <Link href="/dashboard/leads/new">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Nuova Lead
-              </Button>
-            </Link>
+            </motion.div>
+            
+            <motion.div 
+              className="flex items-center gap-3"
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="hidden lg:flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                  <span className="text-gray-600">{leads.filter(l => l.status === 'lead').length} Leads</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+                  <span className="text-gray-600">{leads.filter(l => l.status === 'cliente_attesa').length} In Attesa</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                  <span className="text-gray-600">{leads.filter(l => l.status === 'cliente_confermato').length} Confermati</span>
+                </div>
+              </div>
+              
+              <Link href="/dashboard/leads/new">
+                <Button className="btn-primary">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nuova Lead
+                </Button>
+              </Link>
+            </motion.div>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* Filters */}
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input
-                  type="text"
-                  placeholder="Cerca per nome, località, email o telefono..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
+        {/* Advanced Filters */}
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="card shadow-elegant mb-6"
+        >
+          <div className="p-6">
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Search */}
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ricerca avanzata
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="text"
+                    placeholder="Cerca per nome, località, email o telefono..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="form-input pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div className="lg:w-auto">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filtra per stato
+                </label>
+                <div className="flex gap-2 flex-wrap">
+                  {[
+                    { key: 'all', label: 'Tutti', count: leads.length, color: 'gray' },
+                    { key: 'lead', label: 'Leads', count: leads.filter(l => l.status === 'lead').length, color: 'blue' },
+                    { key: 'cliente_attesa', label: 'In Attesa', count: leads.filter(l => l.status === 'cliente_attesa').length, color: 'yellow' },
+                    { key: 'cliente_confermato', label: 'Confermati', count: leads.filter(l => l.status === 'cliente_confermato').length, color: 'green' }
+                  ].map(({ key, label, count, color }) => (
+                    <Button
+                      key={key}
+                      onClick={() => setFilter(key as any)}
+                      size="sm"
+                      className={`relative ${
+                        filter === key 
+                          ? 'btn-primary' 
+                          : 'btn-secondary'
+                      }`}
+                    >
+                      {label} 
+                      <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                        filter === key 
+                          ? 'bg-white/20 text-white' 
+                          : `bg-${color}-100 text-${color}-700`
+                      }`}>
+                        {count}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
-
-            {/* Status Filter */}
-            <div className="flex gap-2">
-              <Button
-                variant={filter === 'all' ? 'default' : 'outline'}
-                onClick={() => setFilter('all')}
-                size="sm"
-              >
-                Tutti ({leads.length})
-              </Button>
-              <Button
-                variant={filter === 'lead' ? 'default' : 'outline'}
-                onClick={() => setFilter('lead')}
-                size="sm"
-              >
-                Leads ({leads.filter(l => l.status === 'lead').length})
-              </Button>
-              <Button
-                variant={filter === 'cliente_attesa' ? 'default' : 'outline'}
-                onClick={() => setFilter('cliente_attesa')}
-                size="sm"
-              >
-                In Attesa ({leads.filter(l => l.status === 'cliente_attesa').length})
-              </Button>
-              <Button
-                variant={filter === 'cliente_confermato' ? 'default' : 'outline'}
-                onClick={() => setFilter('cliente_confermato')}
-                size="sm"
-              >
-                Confermati ({leads.filter(l => l.status === 'cliente_confermato').length})
-              </Button>
-            </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Leads Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredLeads.map((lead) => (
-            <div key={lead.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+          {filteredLeads.map((lead, index) => (
+            <motion.div 
+              key={lead.id}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 + index * 0.1, duration: 0.4 }}
+              className="card card-hover group cursor-pointer overflow-hidden"
+            >
               {/* Card Header */}
               <div className="p-6 pb-4">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900">{lead.nome}</h3>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(lead.status)}`}>
-                    {getStatusText(lead.status)}
-                  </span>
-                </div>
-
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    {lead.localita} • {lead.camere} camera{lead.camere > 1 ? 'e' : ''}
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                      <span className="text-white font-semibold text-lg">
+                        {lead.nome.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                        {lead.nome}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`badge ${getStatusColor(lead.status)}`}>
+                          {getStatusText(lead.status)}
+                        </span>
+                        {lead.contattato && (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        )}
+                      </div>
+                    </div>
                   </div>
                   
-                  {lead.telefono && (
-                    <div className="flex items-center">
-                      <Phone className="h-4 w-4 mr-2" />
-                      <a href={`tel:${lead.telefono}`} className="hover:text-blue-600">
-                        {lead.telefono}
-                      </a>
+                  <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100">
+                    <MoreVertical className="h-4 w-4 text-gray-400" />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Location & Rooms */}
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                      <MapPin className="h-4 w-4 text-blue-600" />
                     </div>
-                  )}
+                    <div>
+                      <p className="font-medium text-gray-900">{lead.localita}</p>
+                      <p className="text-sm text-gray-500">{lead.camere} camera{lead.camere > 1 ? 'e' : ''}</p>
+                    </div>
+                  </div>
                   
-                  {lead.email && (
-                    <div className="flex items-center">
-                      <Mail className="h-4 w-4 mr-2" />
-                      <a href={`mailto:${lead.email}`} className="hover:text-blue-600 truncate">
-                        {lead.email}
+                  {/* Contact Info */}
+                  <div className="flex items-center gap-3">
+                    {lead.telefono && (
+                      <a 
+                        href={`tel:${lead.telefono}`} 
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                      >
+                        <Phone className="h-4 w-4" />
+                        <span className="text-sm font-medium">Chiama</span>
                       </a>
-                    </div>
-                  )}
+                    )}
+                    
+                    {lead.email && (
+                      <a 
+                        href={`mailto:${lead.email}`} 
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+                      >
+                        <Mail className="h-4 w-4" />
+                        <span className="text-sm font-medium">Email</span>
+                      </a>
+                    )}
+                  </div>
                 </div>
 
                 {/* Note Preview */}
@@ -286,17 +403,25 @@ export default function LeadsPage() {
               </div>
 
               {/* Card Actions */}
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                <div className="flex justify-between items-center mb-3">
-                  <label className="flex items-center text-sm">
+              <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100/50 border-t border-gray-200">
+                <div className="flex justify-between items-center mb-4">
+                  <label className="flex items-center text-sm group cursor-pointer">
                     <input
                       type="checkbox"
                       checked={lead.contattato}
                       onChange={() => toggleContattato(lead.id, lead.contattato)}
-                      className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0"
                     />
-                    Contattato
+                    <span className={`font-medium transition-colors ${
+                      lead.contattato ? 'text-green-700' : 'text-gray-600 group-hover:text-gray-900'
+                    }`}>
+                      {lead.contattato ? '✅ Contattato' : 'Da contattare'}
+                    </span>
                   </label>
+                  
+                  <div className="text-xs text-gray-500">
+                    {new Date(lead.createdAt).toLocaleDateString('it-IT')}
+                  </div>
                 </div>
 
                 {/* Status Actions */}
@@ -343,51 +468,69 @@ export default function LeadsPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2">
-                  <Link href={`/dashboard/leads/${lead.id}`} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full">
-                      <Eye className="h-4 w-4 mr-1" />
+                <div className="grid grid-cols-2 gap-2">
+                  <Link href={`/dashboard/leads/${lead.id}`} className="col-span-1">
+                    <Button className="btn-secondary w-full group">
+                      <Eye className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
                       Dettagli
                     </Button>
                   </Link>
-                  <Link href={`/dashboard/leads/${lead.id}/edit`} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full">
-                      <Edit className="h-4 w-4 mr-1" />
+                  <Link href={`/dashboard/leads/${lead.id}/edit`} className="col-span-1">
+                    <Button className="btn-secondary w-full group">
+                      <Edit className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
                       Modifica
                     </Button>
                   </Link>
-                  <Link href={`/dashboard/appuntamenti/new?leadId=${lead.id}`}>
-                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                      <Calendar className="h-4 w-4" />
+                  <Link href={`/dashboard/appuntamenti/new?leadId=${lead.id}`} className="col-span-1">
+                    <Button className="btn-primary w-full group">
+                      <Calendar className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                      Appuntamento
                     </Button>
                   </Link>
                   <Button 
-                    size="sm" 
-                    variant="outline"
                     onClick={() => deleteLead(lead.id, lead.nome)}
-                    className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                    className="btn-danger w-full group col-span-1"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                    Elimina
                   </Button>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
 
         {/* Empty State */}
         {filteredLeads.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-500 text-lg">
-              {search || filter !== 'all' ? 'Nessuna lead trovata con i filtri selezionati' : 'Nessuna lead presente'}
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-center py-16"
+          >
+            <div className="card max-w-md mx-auto">
+              <div className="p-8">
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto mb-6">
+                  <Users className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {search || filter !== 'all' ? 'Nessuna lead trovata' : 'Inizia la tua gestione leads'}
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {search || filter !== 'all' 
+                    ? 'Prova a modificare i filtri di ricerca per trovare le leads che stai cercando.' 
+                    : 'Aggiungi la tua prima lead per iniziare a gestire i tuoi contatti e clienti potenziali.'
+                  }
+                </p>
+                <Link href="/dashboard/leads/new">
+                  <Button className="btn-primary">
+                    <Plus className="h-4 w-4 mr-2" />
+                    {search || filter !== 'all' ? 'Aggiungi Nuova Lead' : 'Aggiungi Prima Lead'}
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <Link href="/dashboard/leads/new">
-              <Button className="mt-4">
-                <Plus className="h-4 w-4 mr-2" />
-                Aggiungi Prima Lead
-              </Button>
-            </Link>
-          </div>
+          </motion.div>
         )}
       </main>
     </div>

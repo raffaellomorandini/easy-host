@@ -4,7 +4,27 @@ import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowLeft, Crown, Clock, Phone, Mail, MapPin, Calendar, Eye, Trophy } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { toast } from 'react-hot-toast'
+import { 
+  ArrowLeft, 
+  Crown, 
+  Clock, 
+  Phone, 
+  Mail, 
+  MapPin, 
+  Calendar, 
+  Eye, 
+  Trophy,
+  Users,
+  CheckCircle,
+  Star,
+  Award,
+  TrendingUp,
+  Filter,
+  Search,
+  Plus
+} from 'lucide-react'
 
 interface Lead {
   id: number
@@ -34,6 +54,31 @@ export default function ClientiPage() {
   const [appuntamenti, setAppuntamenti] = useState<Appuntamento[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'cliente_attesa' | 'cliente_confermato'>('all')
+  const [search, setSearch] = useState('')
+  const [filteredClienti, setFilteredClienti] = useState<Lead[]>([])
+
+  useEffect(() => {
+    filterClienti()
+  }, [clienti, filter, search])
+
+  const filterClienti = () => {
+    let filtered = clienti
+
+    if (filter !== 'all') {
+      filtered = filtered.filter(cliente => cliente.status === filter)
+    }
+
+    if (search) {
+      filtered = filtered.filter(cliente => 
+        cliente.nome.toLowerCase().includes(search.toLowerCase()) ||
+        cliente.localita.toLowerCase().includes(search.toLowerCase()) ||
+        cliente.email?.toLowerCase().includes(search.toLowerCase()) ||
+        cliente.telefono?.includes(search)
+      )
+    }
+
+    setFilteredClienti(filtered)
+  }
 
   useEffect(() => {
     if (session) {
