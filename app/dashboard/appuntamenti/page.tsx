@@ -47,6 +47,11 @@ export default function AppuntamentiPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed' | 'overdue'>('all')
   const [search, setSearch] = useState('')
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; appuntamento: Appuntamento | null }>({
+    isOpen: false,
+    appuntamento: null
+  })
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (session) {
@@ -57,6 +62,26 @@ export default function AppuntamentiPage() {
   useEffect(() => {
     filterAppuntamenti()
   }, [appuntamenti, filter, search])
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && deleteModal.isOpen) {
+        handleDeleteCancel()
+      }
+    }
+
+    if (deleteModal.isOpen) {
+      document.addEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'hidden' // Previene lo scroll del body
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'unset'
+    }
+  }, [deleteModal.isOpen])
 
   const fetchAppuntamenti = async () => {
     try {
@@ -111,6 +136,41 @@ export default function AppuntamentiPage() {
       console.error('Error updating appuntamento:', error)
       toast.error('Errore durante l\'aggiornamento')
     }
+  }
+
+  const handleDeleteClick = (appuntamento: Appuntamento) => {
+    setDeleteModal({ isOpen: true, appuntamento })
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteModal.appuntamento) return
+
+    setDeleting(true)
+    try {
+      const response = await fetch('/api/appuntamenti', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: deleteModal.appuntamento.id })
+      })
+
+      if (response.ok) {
+        fetchAppuntamenti()
+        toast.success('Appuntamento eliminato con successo!')
+        setDeleteModal({ isOpen: false, appuntamento: null })
+      } else {
+        const errorData = await response.json()
+        toast.error(`Errore durante l'eliminazione: ${errorData.error || 'Errore sconosciuto'}`)
+      }
+    } catch (error) {
+      console.error('Error deleting appuntamento:', error)
+      toast.error('Errore durante l\'eliminazione')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteModal({ isOpen: false, appuntamento: null })
   }
 
   const getStatusInfo = (appuntamento: Appuntamento) => {
@@ -452,6 +512,15 @@ export default function AppuntamentiPage() {
                             <Edit className="h-4 w-4 mr-1 group-hover:scale-110 transition-transform" />
                             Modifica
                           </Button>
+
+                          <Button 
+                            onClick={() => handleDeleteClick(appuntamento)}
+                            className="btn-danger group"
+                            size="sm"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1 group-hover:scale-110 transition-transform" />
+                            Elimina
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -501,6 +570,95 @@ export default function AppuntamentiPage() {
               </div>
             </div>
           </motion.div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteModal.isOpen && deleteModal.appuntamento && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={handleDeleteCancel}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex items-center mb-4">
+                  <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mr-4">
+                    <Trash2 className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Elimina Appuntamento
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Questa azione non può essere annullata
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <p className="text-sm text-gray-700 mb-2">
+                    <span className="font-medium">Cliente:</span> {deleteModal.appuntamento.leadNome}
+                  </p>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <span className="font-medium">Tipo:</span> {deleteModal.appuntamento.tipo}
+                  </p>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <span className="font-medium">Data:</span> {' '}
+                    {new Date(deleteModal.appuntamento.data).toLocaleDateString('it-IT', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                  {deleteModal.appuntamento.luogo && (
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Luogo:</span> {deleteModal.appuntamento.luogo}
+                    </p>
+                  )}
+                </div>
+
+                <p className="text-gray-700 mb-6">
+                  Sei sicuro di voler eliminare questo appuntamento? 
+                  <span className="font-medium text-red-600"> Questa azione non può essere annullata.</span>
+                </p>
+
+                <div className="flex justify-end gap-3">
+                  <Button
+                    onClick={handleDeleteCancel}
+                    variant="outline"
+                    disabled={deleting}
+                  >
+                    Annulla
+                  </Button>
+                  <Button
+                    onClick={handleDeleteConfirm}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    disabled={deleting}
+                  >
+                    {deleting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Eliminando...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Elimina Definitivamente
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
     </div>
   )
