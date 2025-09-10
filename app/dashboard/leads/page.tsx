@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -26,7 +26,8 @@ import {
   MoreVertical,
   ExternalLink,
   PhoneCall,
-  PhoneOff
+  PhoneOff,
+  X
 } from 'lucide-react'
 
 interface Lead {
@@ -43,62 +44,150 @@ interface Lead {
   updatedAt: string
 }
 
+interface PaginationInfo {
+  page: number
+  limit: number
+  totalCount: number
+  hasMore: boolean
+  totalPages: number
+}
+
 export default function LeadsPage() {
   const { data: session } = useSession()
   const [leads, setLeads] = useState<Lead[]>([])
-  const [filteredLeads, setFilteredLeads] = useState<Lead[]>([])
+  const [allLeads, setAllLeads] = useState<Lead[]>([]) // Per i conteggi dei filtri
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 20,
+    totalCount: 0,
+    hasMore: true,
+    totalPages: 0
+  })
   const [filter, setFilter] = useState<'all' | 'lead' | 'foto' | 'appuntamento' | 'ghost' | 'ricontattare' | 'cliente_attesa' | 'cliente_confermato'>('all')
   const [contactFilter, setContactFilter] = useState<'all' | 'contattato' | 'non_contattato'>('all')
   const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const observerTarget = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (session) {
-      fetchLeads()
+      fetchLeads(true) // Reset on first load
+      fetchAllLeadsForCounts() // Per i conteggi dei filtri
     }
   }, [session])
 
   useEffect(() => {
-    filterLeads()
-  }, [leads, filter, contactFilter, search])
+    if (session) {
+      fetchLeads(true) // Reset quando cambiano i filtri
+    }
+  }, [filter, contactFilter, search])
 
-  const fetchLeads = async () => {
+  // Intersection Observer per infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && pagination.hasMore && !loading && !loadingMore) {
+          loadMoreLeads()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current)
+    }
+
+    return () => observer.disconnect()
+  }, [pagination.hasMore, loading, loadingMore])
+
+  const fetchLeads = async (reset = false) => {
+    if (reset) {
+      setLoading(true)
+      setLeads([])
+      setPagination(prev => ({ ...prev, page: 1 }))
+    }
+
     try {
-      const response = await fetch('/api/leads')
+      const params = new URLSearchParams({
+        page: reset ? '1' : pagination.page.toString(),
+        limit: pagination.limit.toString(),
+        ...(search && { search }),
+        ...(filter !== 'all' && { status: filter }),
+        ...(contactFilter !== 'all' && { contattato: contactFilter })
+      })
+
+      const response = await fetch(`/api/leads?${params}`)
       if (response.ok) {
         const data = await response.json()
-        setLeads(data)
+        
+        if (reset) {
+          setLeads(data.leads)
+        } else {
+          setLeads(prev => [...prev, ...data.leads])
+        }
+        
+        setPagination(data.pagination)
       }
     } catch (error) {
       console.error('Error fetching leads:', error)
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
   }
 
-  const filterLeads = () => {
-    let filtered = leads
+  const loadMoreLeads = async () => {
+    if (!pagination.hasMore || loadingMore) return
+    
+    setLoadingMore(true)
+    setPagination(prev => ({ ...prev, page: prev.page + 1 }))
+    
+    try {
+      const params = new URLSearchParams({
+        page: (pagination.page + 1).toString(),
+        limit: pagination.limit.toString(),
+        ...(search && { search }),
+        ...(filter !== 'all' && { status: filter }),
+        ...(contactFilter !== 'all' && { contattato: contactFilter })
+      })
 
-    if (filter !== 'all') {
-      filtered = filtered.filter(lead => lead.status === filter)
+      const response = await fetch(`/api/leads?${params}`)
+      if (response.ok) {
+        const data = await response.json()
+        setLeads(prev => [...prev, ...data.leads])
+        setPagination(data.pagination)
+      }
+    } catch (error) {
+      console.error('Error loading more leads:', error)
+    } finally {
+      setLoadingMore(false)
     }
+  }
 
-    if (contactFilter !== 'all') {
-      filtered = filtered.filter(lead => 
-        contactFilter === 'contattato' ? lead.contattato : !lead.contattato
-      )
+  const fetchAllLeadsForCounts = async () => {
+    try {
+      const response = await fetch('/api/leads?limit=1000') // Carica più leads per i conteggi
+      if (response.ok) {
+        const data = await response.json()
+        setAllLeads(data.leads)
+      }
+    } catch (error) {
+      console.error('Error fetching all leads for counts:', error)
     }
+  }
 
-    if (search) {
-      filtered = filtered.filter(lead => 
-        lead.nome.toLowerCase().includes(search.toLowerCase()) ||
-        lead.localita.toLowerCase().includes(search.toLowerCase()) ||
-        lead.email?.toLowerCase().includes(search.toLowerCase()) ||
-        lead.telefono?.includes(search)
-      )
-    }
+  const handleSearch = () => {
+    setSearch(searchInput)
+  }
 
-    setFilteredLeads(filtered)
+  const handleFilterChange = (newFilter: typeof filter) => {
+    setFilter(newFilter)
+  }
+
+  const handleContactFilterChange = (newFilter: typeof contactFilter) => {
+    setContactFilter(newFilter)
   }
 
   const updateLeadStatus = async (leadId: number, newStatus: string) => {
@@ -110,7 +199,8 @@ export default function LeadsPage() {
       })
 
       if (response.ok) {
-        fetchLeads() // Ricarica i dati
+        fetchLeads(true) // Reset per aggiornare i dati
+        fetchAllLeadsForCounts() // Aggiorna i conteggi
         toast.success('Status aggiornato con successo!')
       } else {
         toast.error('Errore durante l\'aggiornamento')
@@ -130,7 +220,8 @@ export default function LeadsPage() {
       })
 
       if (response.ok) {
-        fetchLeads()
+        fetchLeads(true) // Reset per aggiornare i dati
+        fetchAllLeadsForCounts() // Aggiorna i conteggi
         toast.success('Contatto aggiornato!')
       } else {
         toast.error('Errore durante l\'aggiornamento')
@@ -157,7 +248,8 @@ export default function LeadsPage() {
       })
 
       if (response.ok) {
-        fetchLeads() // Ricarica i dati
+        fetchLeads(true) // Reset per aggiornare i dati
+        fetchAllLeadsForCounts() // Aggiorna i conteggi
         toast.success('Lead eliminata con successo!')
       } else {
         const error = await response.json()
@@ -208,7 +300,7 @@ export default function LeadsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestione Leads</h1>
           <p className="text-gray-600 mt-1">
-            {leads.length} leads totali • {leads.filter(l => l.status === 'lead').length} nuove • {leads.filter(l => l.status === 'foto').length} foto • {leads.filter(l => l.status === 'appuntamento').length} appuntamento • {leads.filter(l => l.status === 'cliente_confermato').length} confermati
+            {allLeads.length} leads totali • {allLeads.filter(l => l.status === 'lead').length} nuove • {allLeads.filter(l => l.status === 'foto').length} foto • {allLeads.filter(l => l.status === 'appuntamento').length} appuntamento • {allLeads.filter(l => l.status === 'cliente_confermato').length} confermati
           </p>
         </div>
         <Link href="/dashboard/leads/new">
@@ -232,15 +324,37 @@ export default function LeadsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Ricerca avanzata
                 </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    placeholder="Cerca per nome, località, email o telefono..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="form-input pl-10"
-                  />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <input
+                      type="text"
+                      placeholder="Cerca per nome, località, email o telefono..."
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      className="form-input pl-10"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleSearch}
+                    className="btn-primary"
+                    disabled={loading}
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Cerca
+                  </Button>
+                  {search && (
+                    <Button
+                      onClick={() => {
+                        setSearchInput('')
+                        setSearch('')
+                      }}
+                      className="btn-secondary"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -252,18 +366,18 @@ export default function LeadsPage() {
                   </label>
                   <div className="flex gap-2 flex-wrap">
                     {[
-                      { key: 'all', label: 'Tutti', count: leads.length, color: 'gray' },
-                      { key: 'lead', label: 'Leads', count: leads.filter(l => l.status === 'lead').length, color: 'blue' },
-                      { key: 'foto', label: 'Foto', count: leads.filter(l => l.status === 'foto').length, color: 'purple' },
-                      { key: 'appuntamento', label: 'Appuntamento', count: leads.filter(l => l.status === 'appuntamento').length, color: 'blue' },
-                      { key: 'ghost', label: 'Ghost', count: leads.filter(l => l.status === 'ghost').length, color: 'red' },
-                      { key: 'ricontattare', label: 'Ricontattare', count: leads.filter(l => l.status === 'ricontattare').length, color: 'orange' },
-                      { key: 'cliente_attesa', label: 'In Attesa', count: leads.filter(l => l.status === 'cliente_attesa').length, color: 'yellow' },
-                      { key: 'cliente_confermato', label: 'Confermati', count: leads.filter(l => l.status === 'cliente_confermato').length, color: 'green' }
+                      { key: 'all', label: 'Tutti', count: allLeads.length, color: 'gray' },
+                      { key: 'lead', label: 'Leads', count: allLeads.filter(l => l.status === 'lead').length, color: 'blue' },
+                      { key: 'foto', label: 'Foto', count: allLeads.filter(l => l.status === 'foto').length, color: 'purple' },
+                      { key: 'appuntamento', label: 'Appuntamento', count: allLeads.filter(l => l.status === 'appuntamento').length, color: 'blue' },
+                      { key: 'ghost', label: 'Ghost', count: allLeads.filter(l => l.status === 'ghost').length, color: 'red' },
+                      { key: 'ricontattare', label: 'Ricontattare', count: allLeads.filter(l => l.status === 'ricontattare').length, color: 'orange' },
+                      { key: 'cliente_attesa', label: 'In Attesa', count: allLeads.filter(l => l.status === 'cliente_attesa').length, color: 'yellow' },
+                      { key: 'cliente_confermato', label: 'Confermati', count: allLeads.filter(l => l.status === 'cliente_confermato').length, color: 'green' }
                     ].map(({ key, label, count, color }) => (
                       <Button
                         key={key}
-                        onClick={() => setFilter(key as any)}
+                        onClick={() => handleFilterChange(key as any)}
                         size="sm"
                         className={`relative ${
                           filter === key 
@@ -291,13 +405,13 @@ export default function LeadsPage() {
                   </label>
                   <div className="flex gap-2 flex-wrap">
                     {[
-                      { key: 'all', label: 'Tutti', count: leads.length, color: 'gray', icon: Users },
-                      { key: 'contattato', label: 'Contattati', count: leads.filter(l => l.contattato).length, color: 'green', icon: PhoneCall },
-                      { key: 'non_contattato', label: 'Non Contattati', count: leads.filter(l => !l.contattato).length, color: 'red', icon: PhoneOff }
+                      { key: 'all', label: 'Tutti', count: allLeads.length, color: 'gray', icon: Users },
+                      { key: 'contattato', label: 'Contattati', count: allLeads.filter(l => l.contattato).length, color: 'green', icon: PhoneCall },
+                      { key: 'non_contattato', label: 'Non Contattati', count: allLeads.filter(l => !l.contattato).length, color: 'red', icon: PhoneOff }
                     ].map(({ key, label, count, color, icon: Icon }) => (
                       <Button
                         key={key}
-                        onClick={() => setContactFilter(key as any)}
+                        onClick={() => handleContactFilterChange(key as any)}
                         size="sm"
                         className={`relative ${
                           contactFilter === key 
@@ -325,12 +439,9 @@ export default function LeadsPage() {
 
       {/* Leads Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredLeads.map((lead, index) => (
-            <motion.div 
+          {leads.map((lead, index) => (
+            <div 
               key={lead.id}
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 + index * 0.1, duration: 0.4 }}
               className="card card-hover group cursor-pointer overflow-hidden"
             >
               {/* Card Header */}
@@ -551,12 +662,39 @@ export default function LeadsPage() {
                   </Button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 
+      {/* Loading More Indicator */}
+      {loadingMore && (
+        <div className="flex justify-center py-8">
+          <div className="flex items-center gap-2 text-gray-600">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            Caricamento altre leads...
+          </div>
+        </div>
+      )}
+
+      {/* Infinite Scroll Observer Target */}
+      {pagination.hasMore && !loading && (
+        <div ref={observerTarget} className="h-10 flex items-center justify-center">
+          <div className="text-sm text-gray-500">Scorri per caricare altre leads...</div>
+        </div>
+      )}
+
+      {/* Pagination Info */}
+      {!loading && leads.length > 0 && (
+        <div className="mt-6 text-center text-sm text-gray-600 bg-gray-50 rounded-lg p-4">
+          Mostrati {leads.length} di {pagination.totalCount} leads totali
+          {pagination.hasMore && (
+            <span> • Pagina {pagination.page} di {pagination.totalPages}</span>
+          )}
+        </div>
+      )}
+
       {/* Empty State */}
-      {filteredLeads.length === 0 && (
+      {leads.length === 0 && !loading && (
           <motion.div 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -572,8 +710,8 @@ export default function LeadsPage() {
                   {search || filter !== 'all' ? 'Nessuna lead trovata' : 'Inizia la tua gestione leads'}
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  {search || filter !== 'all' 
-                    ? 'Prova a modificare i filtri di ricerca per trovare le leads che stai cercando.' 
+                  {search || filter !== 'all' || contactFilter !== 'all'
+                    ? 'Nessuna lead trovata con i filtri selezionati. Prova a modificare i criteri di ricerca.' 
                     : 'Aggiungi la tua prima lead per iniziare a gestire i tuoi contatti e clienti potenziali.'
                   }
                 </p>
