@@ -5,7 +5,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowLeft, Save, X } from 'lucide-react'
+import { ArrowLeft, Save, X, Search } from 'lucide-react'
 
 interface Lead {
   id: number
@@ -24,7 +24,10 @@ function NewAppuntamentoForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
-  const [leads, setLeads] = useState<Lead[]>([])
+  const [searchedLeads, setSearchedLeads] = useState<Lead[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searching, setSearching] = useState(false)
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [formData, setFormData] = useState({
     leadId: parseInt(searchParams.get('leadId') || '0') || 0,
     data: '',
@@ -34,21 +37,56 @@ function NewAppuntamentoForm() {
     completato: false
   })
 
+  // Se c'è un leadId preselezionato (da URL), carica quella lead specifica
   useEffect(() => {
-    if (session) {
-      fetchLeads()
+    if (session && formData.leadId > 0) {
+      fetchSelectedLead(formData.leadId)
     }
-  }, [session])
+  }, [session, formData.leadId])
 
-  const fetchLeads = async () => {
+  // Effettua la ricerca quando cambia il termine di ricerca
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setSearchedLeads([])
+      return
+    }
+
+    const timeoutId = setTimeout(() => {
+      searchLeads(searchTerm)
+    }, 300) // Debounce di 300ms
+
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm])
+
+  const fetchSelectedLead = async (leadId: number) => {
     try {
-      const response = await fetch('/api/leads?limit=1000')
+      const response = await fetch(`/api/leads?id=${leadId}`)
       if (response.ok) {
-        const data = await response.json()
-        setLeads(data.leads)
+        const lead = await response.json()
+        setSelectedLead(lead)
       }
     } catch (error) {
-      console.error('Error fetching leads:', error)
+      console.error('Error fetching selected lead:', error)
+    }
+  }
+
+  const searchLeads = async (search: string) => {
+    if (!search.trim()) {
+      setSearchedLeads([])
+      return
+    }
+
+    setSearching(true)
+    try {
+      const response = await fetch(`/api/leads?search=${encodeURIComponent(search)}&limit=50`)
+      if (response.ok) {
+        const data = await response.json()
+        setSearchedLeads(data.leads)
+      }
+    } catch (error) {
+      console.error('Error searching leads:', error)
+    } finally {
+      setSearching(false)
     }
   }
 
@@ -110,6 +148,16 @@ function NewAppuntamentoForm() {
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
                name === 'leadId' ? parseInt(value) || 0 : value
     }))
+
+    // Se viene selezionata una lead dal dropdown, aggiornala
+    if (name === 'leadId' && value !== '0') {
+      const lead = searchedLeads.find(l => l.id === parseInt(value))
+      if (lead) {
+        setSelectedLead(lead)
+      }
+    } else if (name === 'leadId' && value === '0') {
+      setSelectedLead(null)
+    }
   }
 
   // Suggerimenti per il tipo di appuntamento
@@ -124,7 +172,6 @@ function NewAppuntamentoForm() {
     'Altro'
   ]
 
-  const selectedLead = leads.find(l => l.id === formData.leadId)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -157,6 +204,26 @@ function NewAppuntamentoForm() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Lead di Riferimento</h2>
               <div className="grid grid-cols-1 gap-6">
                 <div>
+                  <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+                    Cerca Lead
+                  </label>
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <input
+                      type="text"
+                      id="search"
+                      placeholder="Cerca per nome, località, email o telefono..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-10 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    {searching && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      </div>
+                    )}
+                  </div>
+                  
                   <label htmlFor="leadId" className="block text-sm font-medium text-gray-700 mb-1">
                     Seleziona Lead *
                   </label>
@@ -167,14 +234,40 @@ function NewAppuntamentoForm() {
                     value={formData.leadId}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    disabled={searchTerm.trim() === '' && !selectedLead}
                   >
-                    <option value={0}>Seleziona una lead...</option>
-                    {leads.map((lead) => (
+                    <option value={0}>
+                      {searchTerm.trim() === '' ? 'Inizia a digitare per cercare lead...' : 'Seleziona una lead...'}
+                    </option>
+                    {selectedLead && formData.leadId === selectedLead.id && (
+                      <option key={selectedLead.id} value={selectedLead.id}>
+                        {selectedLead.nome} - {selectedLead.localita} ({selectedLead.camere} camera{selectedLead.camere > 1 ? 'e' : ''})
+                      </option>
+                    )}
+                    {searchedLeads.map((lead) => (
                       <option key={lead.id} value={lead.id}>
                         {lead.nome} - {lead.localita} ({lead.camere} camera{lead.camere > 1 ? 'e' : ''})
                       </option>
                     ))}
                   </select>
+                  
+                  {searchTerm.trim() === '' && !selectedLead && (
+                    <div className="mt-2 p-2 text-sm text-gray-600 bg-gray-50 rounded">
+                      💡 Inizia a digitare nel campo di ricerca per trovare le lead
+                    </div>
+                  )}
+                  
+                  {searchTerm && !searching && searchedLeads.length === 0 && (
+                    <div className="mt-2 p-2 text-sm text-gray-500 bg-gray-50 rounded">
+                      Nessuna lead trovata per "{searchTerm}"
+                    </div>
+                  )}
+                  
+                  {searchedLeads.length > 0 && searchTerm && (
+                    <div className="mt-2 p-2 text-sm text-blue-600 bg-blue-50 rounded">
+                      {searchedLeads.length} lead{searchedLeads.length > 1 ? 's' : ''} trovata{searchedLeads.length > 1 ? 'e' : ''}
+                    </div>
+                  )}
                   
                   {selectedLead && (
                     <div className="mt-2 p-3 bg-blue-50 rounded-lg text-sm">
@@ -217,7 +310,6 @@ function NewAppuntamentoForm() {
                     required
                     value={formData.data}
                     onChange={handleInputChange}
-                    min={new Date().toISOString().slice(0, 16)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -327,6 +419,7 @@ function NewAppuntamentoForm() {
         <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
           <h3 className="font-medium text-green-900 mb-2">📅 Consigli per gli appuntamenti</h3>
           <ul className="text-sm text-green-800 space-y-1">
+            <li>• Digita nel campo di ricerca per trovare la lead desiderata (ricerca in tempo reale)</li>
             <li>• Conferma sempre data e ora con la lead prima di fissare l'appuntamento</li>
             <li>• Specifica il tipo di incontro per preparare al meglio i materiali necessari</li>
             <li>• Aggiungi note specifiche per ricordare dettagli importanti discussi</li>
