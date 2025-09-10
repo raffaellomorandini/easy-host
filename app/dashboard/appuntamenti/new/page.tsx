@@ -42,10 +42,10 @@ function NewAppuntamentoForm() {
 
   const fetchLeads = async () => {
     try {
-      const response = await fetch('/api/leads')
+      const response = await fetch('/api/leads?limit=1000')
       if (response.ok) {
         const data = await response.json()
-        setLeads(data)
+        setLeads(data.leads)
       }
     } catch (error) {
       console.error('Error fetching leads:', error)

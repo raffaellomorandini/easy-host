@@ -13,11 +13,21 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
     const contattato = searchParams.get('contattato') || '';
+    
+    // Se è richiesto un ID specifico, restituisci solo quella lead
+    if (id) {
+      const lead = await db.select().from(leads).where(eq(leads.id, parseInt(id))).limit(1);
+      if (lead.length === 0) {
+        return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+      }
+      return NextResponse.json(lead[0]);
+    }
     
     const offset = (page - 1) * limit;
 

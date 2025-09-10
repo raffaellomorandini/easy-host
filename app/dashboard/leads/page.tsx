@@ -326,14 +326,14 @@ export default function LeadsPage() {
                 </label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <input
-                      type="text"
-                      placeholder="Cerca per nome, località, email o telefono..."
+                  <input
+                    type="text"
+                    placeholder="Cerca per nome, località, email o telefono..."
                       value={searchInput}
                       onChange={(e) => setSearchInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                      className="form-input pl-10"
-                    />
+                    className="form-input pl-10"
+                  />
                   </div>
                   <Button
                     onClick={handleSearch}
@@ -572,13 +572,13 @@ export default function LeadsPage() {
                   )}
                   {(lead.status === 'foto' || lead.status === 'appuntamento' || lead.status === 'ricontattare') && (
                     <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updateLeadStatus(lead.id, 'cliente_attesa')}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateLeadStatus(lead.id, 'cliente_attesa')}
                         className="text-xs bg-yellow-50 hover:bg-yellow-100 text-yellow-700"
-                      >
-                        → In Attesa
+                    >
+                      → In Attesa
                       </Button>
                       <Button
                         size="sm"

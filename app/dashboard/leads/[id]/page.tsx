@@ -50,11 +50,13 @@ export default function LeadDetailsPage() {
 
   const fetchLead = async () => {
     try {
-      const response = await fetch('/api/leads')
+      // Cerca la lead specifica utilizzando il parametro ID
+      const response = await fetch(`/api/leads?id=${params.id}`)
       if (response.ok) {
-        const data = await response.json()
-        const foundLead = data.find((l: Lead) => l.id === parseInt(params.id as string))
-        setLead(foundLead || null)
+        const lead = await response.json()
+        setLead(lead)
+      } else if (response.status === 404) {
+        setLead(null)
       }
     } catch (error) {
       console.error('Error fetching lead:', error)

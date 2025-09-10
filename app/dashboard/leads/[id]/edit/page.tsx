@@ -46,23 +46,20 @@ export default function EditLeadPage() {
 
   const fetchLead = async () => {
     try {
-      const response = await fetch('/api/leads')
+      const response = await fetch(`/api/leads?id=${params.id}`)
       if (response.ok) {
-        const data = await response.json()
-        const foundLead = data.find((l: Lead) => l.id === parseInt(params.id as string))
-        if (foundLead) {
-          setLead(foundLead)
-          setFormData({
-            nome: foundLead.nome,
-            localita: foundLead.localita,
-            camere: foundLead.camere,
-            telefono: foundLead.telefono || '',
-            email: foundLead.email || '',
-            contattato: foundLead.contattato,
-            note: foundLead.note || '',
-            status: foundLead.status
-          })
-        }
+        const foundLead = await response.json()
+        setLead(foundLead)
+        setFormData({
+          nome: foundLead.nome,
+          localita: foundLead.localita,
+          camere: foundLead.camere,
+          telefono: foundLead.telefono || '',
+          email: foundLead.email || '',
+          contattato: foundLead.contattato,
+          note: foundLead.note || '',
+          status: foundLead.status
+        })
       }
     } catch (error) {
       console.error('Error fetching lead:', error)

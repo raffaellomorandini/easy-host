@@ -88,11 +88,11 @@ export default function ClientiPage() {
 
   const fetchClienti = async () => {
     try {
-      const response = await fetch('/api/leads')
+      const response = await fetch('/api/leads?limit=1000')
       if (response.ok) {
         const data = await response.json()
         // Filtra solo clienti (in attesa e confermati) - esclude status intermedi
-        const clientiData = data.filter((lead: Lead) => 
+        const clientiData = data.leads.filter((lead: Lead) => 
           lead.status === 'cliente_attesa' || lead.status === 'cliente_confermato'
         )
         setClienti(clientiData)
