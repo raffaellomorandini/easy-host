@@ -39,7 +39,6 @@ const sidebarItems: SidebarItem[] = [
     name: 'Leads',
     href: '/dashboard/leads',
     icon: Users,
-    badge: 5
   },
   {
     name: 'Clienti',
@@ -60,7 +59,6 @@ const sidebarItems: SidebarItem[] = [
     name: 'Task Manager',
     href: '/dashboard/tasks',
     icon: CheckSquare,
-    badge: 3
   }
 ]
 
@@ -164,11 +162,6 @@ export default function DashboardLayout({
                       <item.icon className={`h-5 w-5 ${isActive ? 'text-blue-700' : 'text-gray-400'}`} />
                       <span>{item.name}</span>
                     </div>
-                    {item.badge && (
-                      <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                        {item.badge}
-                      </span>
-                    )}
                   </Link>
                 )
               })}
@@ -227,15 +220,7 @@ export default function DashboardLayout({
                 <Menu className="h-5 w-5" />
               </button>
               
-              {/* Search bar */}
-              <div className="hidden md:block relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Cerca ovunque..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-80"
-                />
-              </div>
+              
             </div>
 
             <div className="flex items-center space-x-4">
