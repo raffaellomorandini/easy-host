@@ -83,6 +83,11 @@ export default function DashboardPage() {
   }
 
   const leadsCount = leads.length
+  const leadsPure = leads.filter(lead => lead.status === 'lead').length
+  const leadsFoto = leads.filter(lead => lead.status === 'foto').length
+  const leadsAppuntamento = leads.filter(lead => lead.status === 'appuntamento').length
+  const leadsGhost = leads.filter(lead => lead.status === 'ghost').length
+  const leadsRicontattare = leads.filter(lead => lead.status === 'ricontattare').length
   const clientiAttesa = leads.filter(lead => lead.status === 'cliente_attesa').length
   const clientiConfermati = leads.filter(lead => lead.status === 'cliente_confermato').length
   const prossimiAppuntamenti = 1 // Placeholder
@@ -109,14 +114,16 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 mb-8">
         {[
-          { title: "Totale Leads", value: leadsCount, icon: Users, color: "blue", change: "+12%" },
+          { title: "Totale", value: leadsCount, icon: Users, color: "blue", change: "+12%" },
+          { title: "Leads", value: leadsPure, icon: Users, color: "gray", change: "+2%" },
+          { title: "Foto", value: leadsFoto, icon: Users, color: "purple", change: "+8%" },
+          { title: "Appuntamento", value: leadsAppuntamento, icon: Calendar, color: "blue", change: "+15%" },
+          { title: "Ghost", value: leadsGhost, icon: Users, color: "red", change: "-3%" },
+          { title: "Ricontattare", value: leadsRicontattare, icon: Users, color: "orange", change: "+5%" },
           { title: "In Attesa", value: clientiAttesa, icon: Clock, color: "yellow", change: "+5%" },
-          { title: "Confermati", value: clientiConfermati, icon: UserCheck, color: "green", change: "+8%" },
-          { title: "Appuntamenti", value: prossimiAppuntamenti, icon: Calendar, color: "purple", change: "+3%" },
-          { title: "Tasks", value: tasksPendenti, icon: CheckSquare, color: "indigo", change: "-2%" },
-          { title: "Urgenti", value: tasksUrgenti, icon: Zap, color: "red", change: "0%" }
+          { title: "Confermati", value: clientiConfermati, icon: UserCheck, color: "green", change: "+8%" }
         ].map((stat, index) => (
           <motion.div
             key={stat.title}
@@ -152,6 +159,8 @@ export default function DashboardPage() {
                   stat.color === 'green' ? 'bg-green-100' :
                   stat.color === 'purple' ? 'bg-purple-100' :
                   stat.color === 'indigo' ? 'bg-indigo-100' :
+                  stat.color === 'orange' ? 'bg-orange-100' :
+                  stat.color === 'gray' ? 'bg-gray-100' :
                   'bg-red-100'
                 }`}>
                   <stat.icon className={`h-6 w-6 ${
@@ -160,6 +169,8 @@ export default function DashboardPage() {
                     stat.color === 'green' ? 'text-green-600' :
                     stat.color === 'purple' ? 'text-purple-600' :
                     stat.color === 'indigo' ? 'text-indigo-600' :
+                    stat.color === 'orange' ? 'text-orange-600' :
+                    stat.color === 'gray' ? 'text-gray-600' :
                     'text-red-600'
                   }`} />
                 </div>
@@ -271,10 +282,23 @@ export default function DashboardPage() {
                             ? 'bg-green-100 text-green-800' 
                             : lead.status === 'cliente_attesa'
                             ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-blue-100 text-blue-800'
+                            : lead.status === 'foto'
+                            ? 'bg-purple-100 text-purple-800'
+                            : lead.status === 'appuntamento'
+                            ? 'bg-blue-100 text-blue-800'
+                            : lead.status === 'ghost'
+                            ? 'bg-red-100 text-red-800'
+                            : lead.status === 'ricontattare'
+                            ? 'bg-orange-100 text-orange-800'
+                            : 'bg-gray-100 text-gray-800'
                         }`}>
                           {lead.status === 'cliente_confermato' ? 'Cliente Confermato' : 
-                           lead.status === 'cliente_attesa' ? 'In Attesa' : 'Lead'}
+                           lead.status === 'cliente_attesa' ? 'In Attesa' : 
+                           lead.status === 'foto' ? 'Foto' :
+                           lead.status === 'appuntamento' ? 'Appuntamento' :
+                           lead.status === 'ghost' ? 'Ghost' :
+                           lead.status === 'ricontattare' ? 'Ricontattare' :
+                           'Lead'}
                         </span>
                         <span>{lead.localita}</span>
                         <span>{lead.camere} camera{lead.camere > 1 ? 'e' : ''}</span>

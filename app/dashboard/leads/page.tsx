@@ -48,7 +48,7 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<'all' | 'lead' | 'cliente_attesa' | 'cliente_confermato'>('all')
+  const [filter, setFilter] = useState<'all' | 'lead' | 'foto' | 'appuntamento' | 'ghost' | 'ricontattare' | 'cliente_attesa' | 'cliente_confermato'>('all')
   const [contactFilter, setContactFilter] = useState<'all' | 'contattato' | 'non_contattato'>('all')
   const [search, setSearch] = useState('')
 
@@ -173,6 +173,10 @@ export default function LeadsPage() {
     switch (status) {
       case 'cliente_confermato': return 'bg-green-100 text-green-800'
       case 'cliente_attesa': return 'bg-yellow-100 text-yellow-800'
+      case 'foto': return 'bg-purple-100 text-purple-800'
+      case 'appuntamento': return 'bg-blue-100 text-blue-800'
+      case 'ghost': return 'bg-red-100 text-red-800'
+      case 'ricontattare': return 'bg-orange-100 text-orange-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -181,6 +185,10 @@ export default function LeadsPage() {
     switch (status) {
       case 'cliente_confermato': return 'Cliente Confermato'
       case 'cliente_attesa': return 'Cliente in Attesa'
+      case 'foto': return 'Foto'
+      case 'appuntamento': return 'Appuntamento'
+      case 'ghost': return 'Ghost'
+      case 'ricontattare': return 'Ricontattare'
       default: return 'Lead'
     }
   }
@@ -200,7 +208,7 @@ export default function LeadsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestione Leads</h1>
           <p className="text-gray-600 mt-1">
-            {leads.length} leads totali • {leads.filter(l => l.status === 'lead').length} nuove • {leads.filter(l => l.status === 'cliente_attesa').length} in attesa • {leads.filter(l => l.status === 'cliente_confermato').length} confermati
+            {leads.length} leads totali • {leads.filter(l => l.status === 'lead').length} nuove • {leads.filter(l => l.status === 'foto').length} foto • {leads.filter(l => l.status === 'appuntamento').length} appuntamento • {leads.filter(l => l.status === 'cliente_confermato').length} confermati
           </p>
         </div>
         <Link href="/dashboard/leads/new">
@@ -246,6 +254,10 @@ export default function LeadsPage() {
                     {[
                       { key: 'all', label: 'Tutti', count: leads.length, color: 'gray' },
                       { key: 'lead', label: 'Leads', count: leads.filter(l => l.status === 'lead').length, color: 'blue' },
+                      { key: 'foto', label: 'Foto', count: leads.filter(l => l.status === 'foto').length, color: 'purple' },
+                      { key: 'appuntamento', label: 'Appuntamento', count: leads.filter(l => l.status === 'appuntamento').length, color: 'blue' },
+                      { key: 'ghost', label: 'Ghost', count: leads.filter(l => l.status === 'ghost').length, color: 'red' },
+                      { key: 'ricontattare', label: 'Ricontattare', count: leads.filter(l => l.status === 'ricontattare').length, color: 'orange' },
                       { key: 'cliente_attesa', label: 'In Attesa', count: leads.filter(l => l.status === 'cliente_attesa').length, color: 'yellow' },
                       { key: 'cliente_confermato', label: 'Confermati', count: leads.filter(l => l.status === 'cliente_confermato').length, color: 'green' }
                     ].map(({ key, label, count, color }) => (
@@ -419,15 +431,64 @@ export default function LeadsPage() {
                 </div>
 
                 {/* Status Actions */}
-                <div className="flex gap-2 mb-3">
+                <div className="flex gap-1 mb-3 flex-wrap">
                   {lead.status === 'lead' && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateLeadStatus(lead.id, 'foto')}
+                        className="text-xs bg-purple-50 hover:bg-purple-100 text-purple-700"
+                      >
+                        📸 Foto
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateLeadStatus(lead.id, 'appuntamento')}
+                        className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700"
+                      >
+                        📅 Appuntamento
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateLeadStatus(lead.id, 'ghost')}
+                        className="text-xs bg-red-50 hover:bg-red-100 text-red-700"
+                      >
+                        👻 Ghost
+                      </Button>
+                    </>
+                  )}
+                  {(lead.status === 'foto' || lead.status === 'appuntamento' || lead.status === 'ricontattare') && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateLeadStatus(lead.id, 'cliente_attesa')}
+                        className="text-xs bg-yellow-50 hover:bg-yellow-100 text-yellow-700"
+                      >
+                        → In Attesa
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateLeadStatus(lead.id, 'ricontattare')}
+                        className="text-xs bg-orange-50 hover:bg-orange-100 text-orange-700"
+                        disabled={lead.status === 'ricontattare'}
+                      >
+                        📞 Ricontattare
+                      </Button>
+                    </>
+                  )}
+                  {lead.status === 'ghost' && (
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => updateLeadStatus(lead.id, 'cliente_attesa')}
-                      className="text-xs"
+                      onClick={() => updateLeadStatus(lead.id, 'ricontattare')}
+                      className="text-xs bg-orange-50 hover:bg-orange-100 text-orange-700"
                     >
-                      → In Attesa
+                      📞 Ricontattare
                     </Button>
                   )}
                   {lead.status === 'cliente_attesa' && (

@@ -62,7 +62,7 @@ export const leads = pgTable('leads', {
   email: varchar('email', { length: 255 }),
   contattato: boolean('contattato').default(false),
   note: text('note'),
-  status: varchar('status', { length: 50 }).default('lead'), // 'lead', 'cliente_attesa', 'cliente_confermato'
+  status: varchar('status', { length: 50 }).default('lead'), // 'lead', 'foto', 'appuntamento', 'ghost', 'ricontattare', 'cliente_attesa', 'cliente_confermato'
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

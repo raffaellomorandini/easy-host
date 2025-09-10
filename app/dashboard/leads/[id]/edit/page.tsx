@@ -202,6 +202,10 @@ export default function EditLeadPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="lead">Lead</option>
+                    <option value="foto">Foto</option>
+                    <option value="appuntamento">Appuntamento</option>
+                    <option value="ghost">Ghost</option>
+                    <option value="ricontattare">Ricontattare</option>
                     <option value="cliente_attesa">Cliente in Attesa</option>
                     <option value="cliente_confermato">Cliente Confermato</option>
                   </select>

@@ -116,6 +116,10 @@ export default function LeadDetailsPage() {
     switch (status) {
       case 'cliente_confermato': return 'bg-green-100 text-green-800 border-green-200'
       case 'cliente_attesa': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      case 'foto': return 'bg-purple-100 text-purple-800 border-purple-200'
+      case 'appuntamento': return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'ghost': return 'bg-red-100 text-red-800 border-red-200'
+      case 'ricontattare': return 'bg-orange-100 text-orange-800 border-orange-200'
       default: return 'bg-gray-100 text-gray-800 border-gray-200'
     }
   }
@@ -124,6 +128,10 @@ export default function LeadDetailsPage() {
     switch (status) {
       case 'cliente_confermato': return 'Cliente Confermato'
       case 'cliente_attesa': return 'Cliente in Attesa'
+      case 'foto': return 'Foto'
+      case 'appuntamento': return 'Appuntamento'
+      case 'ghost': return 'Ghost'
+      case 'ricontattare': return 'Ricontattare'
       default: return 'Lead'
     }
   }
@@ -365,12 +373,69 @@ export default function LeadDetailsPage() {
               <div className="space-y-3">
                 {/* Status Actions */}
                 {lead.status === 'lead' && (
-                  <Button
-                    onClick={() => updateLeadStatus('cliente_attesa')}
-                    className="w-full bg-yellow-600 hover:bg-yellow-700"
-                  >
-                    Sposta in "Cliente in Attesa"
-                  </Button>
+                  <>
+                    <Button
+                      onClick={() => updateLeadStatus('foto')}
+                      className="w-full bg-purple-600 hover:bg-purple-700"
+                    >
+                      📸 Sposta a "Foto"
+                    </Button>
+                    <Button
+                      onClick={() => updateLeadStatus('appuntamento')}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                    >
+                      📅 Sposta a "Appuntamento"
+                    </Button>
+                    <Button
+                      onClick={() => updateLeadStatus('ghost')}
+                      className="w-full bg-red-600 hover:bg-red-700"
+                    >
+                      👻 Marca come "Ghost"
+                    </Button>
+                  </>
+                )}
+                
+                {(lead.status === 'foto' || lead.status === 'appuntamento' || lead.status === 'ricontattare') && (
+                  <>
+                    <Button
+                      onClick={() => updateLeadStatus('cliente_attesa')}
+                      className="w-full bg-yellow-600 hover:bg-yellow-700"
+                    >
+                      → Sposta in "Cliente in Attesa"
+                    </Button>
+                    <Button
+                      onClick={() => updateLeadStatus('ricontattare')}
+                      className="w-full bg-orange-600 hover:bg-orange-700"
+                      disabled={lead.status === 'ricontattare'}
+                    >
+                      📞 Marca "Da Ricontattare"
+                    </Button>
+                    <Button
+                      onClick={() => updateLeadStatus('lead')}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      ← Riporta a Lead
+                    </Button>
+                  </>
+                )}
+                
+                {lead.status === 'ghost' && (
+                  <>
+                    <Button
+                      onClick={() => updateLeadStatus('ricontattare')}
+                      className="w-full bg-orange-600 hover:bg-orange-700"
+                    >
+                      📞 Sposta a "Ricontattare"
+                    </Button>
+                    <Button
+                      onClick={() => updateLeadStatus('lead')}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      ← Riporta a Lead
+                    </Button>
+                  </>
                 )}
                 
                 {lead.status === 'cliente_attesa' && (
@@ -397,7 +462,7 @@ export default function LeadDetailsPage() {
                     variant="outline"
                     className="w-full"
                   >
-                    Riporta in "Attesa"
+                    ← Riporta in "Attesa"
                   </Button>
                 )}
 
