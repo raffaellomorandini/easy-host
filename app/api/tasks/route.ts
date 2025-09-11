@@ -152,6 +152,7 @@ export async function DELETE(request: NextRequest) {
 
     const deletedTask = await db
       .delete(tasks)
+      .where(eq(tasks.id, id))
       .returning();
 
     if (deletedTask.length === 0) {
