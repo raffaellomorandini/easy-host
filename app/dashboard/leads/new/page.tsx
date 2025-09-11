@@ -1,29 +1,57 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ArrowLeft, Save, X } from 'lucide-react'
+import { useFormState } from '@/lib/contexts/FormStateContext'
+import { leadFormSchema, type LeadFormData } from '@/lib/schemas/forms'
+import { toast } from 'react-hot-toast'
 
 export default function NewLeadPage() {
   const { data: session } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    nome: '',
-    localita: '',
-    camere: 1,
-    telefono: '',
-    email: '',
-    contattato: false,
-    note: '',
-    status: 'lead'
+  const { leadFormData, setLeadFormData, clearLeadForm } = useFormState()
+
+  const form = useForm<LeadFormData>({
+    resolver: zodResolver(leadFormSchema),
+    defaultValues: {
+      nome: '',
+      localita: '',
+      camere: 1,
+      telefono: '',
+      email: '',
+      contattato: false,
+      note: '',
+      status: 'lead' as const
+    }
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Carica i dati salvati quando il componente si monta
+  useEffect(() => {
+    if (Object.keys(leadFormData).length > 0) {
+      form.reset({ 
+        ...form.getValues(), 
+        ...leadFormData,
+        status: (leadFormData.status as any) || 'lead'
+      })
+    }
+  }, [leadFormData, form])
+
+  // Salva automaticamente i dati quando cambiano
+  useEffect(() => {
+    const subscription = form.watch((value: Partial<LeadFormData>) => {
+      setLeadFormData(value)
+    })
+    return () => subscription.unsubscribe()
+  }, [form, setLeadFormData])
+
+  const handleSubmit = async (data: LeadFormData) => {
     if (!session) return
 
     setLoading(true)
@@ -31,29 +59,38 @@ export default function NewLeadPage() {
       const response = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(data)
       })
 
       if (response.ok) {
+        clearLeadForm() // Pulisce i dati salvati dopo il successo
+        toast.success('Lead creata con successo!')
         router.push('/dashboard/leads')
       } else {
-        alert('Errore durante il salvataggio')
+        const errorData = await response.json()
+        toast.error(`Errore: ${errorData.error || 'Errore durante il salvataggio'}`)
       }
     } catch (error) {
       console.error('Error creating lead:', error)
-      alert('Errore durante il salvataggio')
+      toast.error('Errore durante il salvataggio')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
-               name === 'camere' ? parseInt(value) || 1 : value
-    }))
+  const handleClearForm = () => {
+    clearLeadForm()
+    form.reset({
+      nome: '',
+      localita: '',
+      camere: 1,
+      telefono: '',
+      email: '',
+      contattato: false,
+      note: '',
+      status: 'lead' as const
+    })
+    toast.success('Form svuotato!')
   }
 
   return (
@@ -71,7 +108,22 @@ export default function NewLeadPage() {
               </Link>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Nuova Lead</h1>
-                <p className="text-gray-600">Aggiungi una nuova lead al sistema</p>
+                <div className="flex items-center gap-3">
+                  <p className="text-gray-600">Aggiungi una nuova lead al sistema</p>
+                  {Object.keys(leadFormData).length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-green-600">Bozza salvata</span>
+                      <button
+                        onClick={handleClearForm}
+                        type="button"
+                        className="text-xs text-gray-500 hover:text-red-600 underline"
+                      >
+                        Svuota
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -81,7 +133,7 @@ export default function NewLeadPage() {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow">
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form onSubmit={form.handleSubmit(handleSubmit as any)} className="p-6 space-y-6">
             {/* Informazioni Base */}
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Informazioni Base</h2>
@@ -93,13 +145,15 @@ export default function NewLeadPage() {
                   <input
                     type="text"
                     id="nome"
-                    name="nome"
-                    required
-                    value={formData.nome}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    {...form.register('nome')}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                      form.formState.errors.nome ? 'border-red-300' : 'border-gray-300'
+                    }`}
                     placeholder="Es. Mario Rossi"
                   />
+                  {form.formState.errors.nome && (
+                    <p className="mt-1 text-sm text-red-600">{form.formState.errors.nome.message}</p>
+                  )}
                 </div>
 
                 <div>
@@ -109,13 +163,15 @@ export default function NewLeadPage() {
                   <input
                     type="text"
                     id="localita"
-                    name="localita"
-                    required
-                    value={formData.localita}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    {...form.register('localita')}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                      form.formState.errors.localita ? 'border-red-300' : 'border-gray-300'
+                    }`}
                     placeholder="Es. Milano, Roma, Napoli"
                   />
+                  {form.formState.errors.localita && (
+                    <p className="mt-1 text-sm text-red-600">{form.formState.errors.localita.message}</p>
+                  )}
                 </div>
 
                 <div>
@@ -124,10 +180,10 @@ export default function NewLeadPage() {
                   </label>
                   <select
                     id="camere"
-                    name="camere"
-                    value={formData.camere}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    {...form.register('camere', { valueAsNumber: true })}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                      form.formState.errors.camere ? 'border-red-300' : 'border-gray-300'
+                    }`}
                   >
                     <option value={1}>1 camera</option>
                     <option value={2}>2 camere</option>
@@ -143,10 +199,10 @@ export default function NewLeadPage() {
                   </label>
                   <select
                     id="status"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    {...form.register('status')}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                      form.formState.errors.status ? 'border-red-300' : 'border-gray-300'
+                    }`}
                   >
                     <option value="lead">Lead</option>
                     <option value="foto">Foto</option>
@@ -171,12 +227,15 @@ export default function NewLeadPage() {
                   <input
                     type="tel"
                     id="telefono"
-                    name="telefono"
-                    value={formData.telefono}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    {...form.register('telefono')}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                      form.formState.errors.telefono ? 'border-red-300' : 'border-gray-300'
+                    }`}
                     placeholder="Es. 3333333333"
                   />
+                  {form.formState.errors.telefono && (
+                    <p className="mt-1 text-sm text-red-600">{form.formState.errors.telefono.message}</p>
+                  )}
                 </div>
 
                 <div>
@@ -186,12 +245,15 @@ export default function NewLeadPage() {
                   <input
                     type="email"
                     id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    {...form.register('email')}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                      form.formState.errors.email ? 'border-red-300' : 'border-gray-300'
+                    }`}
                     placeholder="Es. mario.rossi@email.com"
                   />
+                  {form.formState.errors.email && (
+                    <p className="mt-1 text-sm text-red-600">{form.formState.errors.email.message}</p>
+                  )}
                 </div>
               </div>
 
@@ -199,9 +261,7 @@ export default function NewLeadPage() {
                 <label className="flex items-center">
                   <input
                     type="checkbox"
-                    name="contattato"
-                    checked={formData.contattato}
-                    onChange={handleInputChange}
+                    {...form.register('contattato')}
                     className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-700">È già stato contattato</span>
@@ -216,13 +276,16 @@ export default function NewLeadPage() {
               </label>
               <textarea
                 id="note"
-                name="note"
                 rows={6}
-                value={formData.note}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                {...form.register('note')}
+                className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                  form.formState.errors.note ? 'border-red-300' : 'border-gray-300'
+                }`}
                 placeholder="Aggiungi note, dettagli della conversazione, preferenze specifiche..."
               />
+              {form.formState.errors.note && (
+                <p className="mt-1 text-sm text-red-600">{form.formState.errors.note.message}</p>
+              )}
             </div>
 
             {/* Actions */}

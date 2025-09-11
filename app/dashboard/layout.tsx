@@ -21,6 +21,7 @@ import {
   Search
 } from 'lucide-react'
 import { useState } from 'react'
+import { FormStateProvider } from '@/lib/contexts/FormStateContext'
 
 interface SidebarItem {
   name: string
@@ -90,7 +91,8 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex">
+    <FormStateProvider>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
@@ -253,5 +255,6 @@ export default function DashboardLayout({
         </main>
       </div>
     </div>
+    </FormStateProvider>
   )
 }
