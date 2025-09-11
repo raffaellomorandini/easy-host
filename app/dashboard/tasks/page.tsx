@@ -5,11 +5,17 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import { 
   Plus, 
-  Search,
+  Search, 
   Clock, 
   Check, 
   Edit, 
@@ -1174,15 +1180,16 @@ function TasksPageContent() {
 
                 {/* Management Buttons */}
                 <div className="grid grid-cols-3 gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setSelectedTaskForView(task)}
-                    className="btn-secondary group/btn"
-                  >
-                    <Eye className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
-                    Dettagli
-                  </Button>
+                  <Link href={`/dashboard/tasks/${task.id}`}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="btn-secondary group/btn w-full"
+                    >
+                      <Eye className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
+                      Dettagli
+                    </Button>
+                  </Link>
                   <Button
                     size="sm"
                     variant="outline"
@@ -1202,7 +1209,7 @@ function TasksPageContent() {
                     Elimina
                   </Button>
                 </div>
-              </div>
+                </div>
               </div>
             </motion.div>
           ))}
@@ -1222,7 +1229,7 @@ function TasksPageContent() {
                   <CheckSquare className="h-8 w-8 text-white" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {search || filters.stato !== 'all' || filters.priorita !== 'all' || filters.tipo !== 'all' 
+              {search || filters.stato !== 'all' || filters.priorita !== 'all' || filters.tipo !== 'all' 
                     ? 'Nessun task trovato' 
                     : 'Inizia la gestione tasks'
                   }
@@ -1235,19 +1242,19 @@ function TasksPageContent() {
                 </p>
                 <div className="flex gap-3 justify-center">
                   <Button onClick={() => setShowNewTaskForm(true)} className="btn-primary">
-                    <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 mr-2" />
                     {search || filters.stato !== 'all' || filters.priorita !== 'all' || filters.tipo !== 'all' 
                       ? 'Nuovo Task' 
                       : 'Primo Task'
                     }
-                  </Button>
+            </Button>
                   <Link href="/dashboard/calendario">
                     <Button className="btn-secondary">
                       <Calendar className="h-4 w-4 mr-2" />
                       Vai al Calendario
                     </Button>
                   </Link>
-                </div>
+          </div>
               </div>
             </div>
           </motion.div>
