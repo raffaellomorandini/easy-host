@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
-import { tasks } from '@/lib/db/schema';
+import { tasks, leads } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export async function GET() {
@@ -13,9 +13,26 @@ export async function GET() {
 
   try {
     const userTasks = await db
-      .select()
+      .select({
+        id: tasks.id,
+        userId: tasks.userId,
+        leadId: tasks.leadId,
+        titolo: tasks.titolo,
+        descrizione: tasks.descrizione,
+        tipo: tasks.tipo,
+        priorita: tasks.priorita,
+        stato: tasks.stato,
+        dataScadenza: tasks.dataScadenza,
+        completato: tasks.completato,
+        colore: tasks.colore,
+        createdAt: tasks.createdAt,
+        updatedAt: tasks.updatedAt,
+        leadNome: leads.nome,
+        leadLocalita: leads.localita,
+        leadStatus: leads.status
+      })
       .from(tasks)
-      .where(eq(tasks.userId, session.user.id))
+      .leftJoin(leads, eq(tasks.leadId, leads.id))
       .orderBy(tasks.createdAt);
     
     return NextResponse.json(userTasks);
@@ -52,6 +69,7 @@ export async function POST(request: NextRequest) {
     // Prepara i dati per l'inserimento
     const taskData = {
       userId: session.user.id,
+      leadId: body.leadId && body.leadId > 0 ? body.leadId : null,
       titolo: body.titolo.trim(),
       descrizione: body.descrizione || null,
       tipo: body.tipo,

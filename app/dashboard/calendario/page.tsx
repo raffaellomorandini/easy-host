@@ -57,6 +57,9 @@ interface Task {
   dataScadenza?: string
   completato: boolean
   colore: string
+  leadNome?: string
+  leadLocalita?: string
+  leadStatus?: string
 }
 
 export default function CalendarioPage() {
@@ -510,6 +513,13 @@ export default function CalendarioPage() {
                       <p><strong>Tipo:</strong> {selectedEvent.extendedProps?.data?.tipo}</p>
                       <p><strong>Priorità:</strong> {selectedEvent.extendedProps?.data?.priorita}</p>
                       <p><strong>Stato:</strong> {selectedEvent.extendedProps?.data?.stato}</p>
+                      {selectedEvent.extendedProps?.data?.leadNome && (
+                        <p><strong>Lead Associata:</strong> {selectedEvent.extendedProps?.data?.leadNome}
+                          {selectedEvent.extendedProps?.data?.leadLocalita && (
+                            <span> - {selectedEvent.extendedProps?.data?.leadLocalita}</span>
+                          )}
+                        </p>
+                      )}
                       {selectedEvent.extendedProps?.data?.descrizione && (
                         <p><strong>Descrizione:</strong> {selectedEvent.extendedProps?.data?.descrizione}</p>
                       )}

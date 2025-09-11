@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowLeft, Edit, Phone, Mail, MapPin, Calendar, Clock, User, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Edit, Phone, Mail, MapPin, Calendar, Clock, User, CheckCircle, CheckSquare, Target } from 'lucide-react'
 
 interface Lead {
   id: number
@@ -33,18 +33,36 @@ interface Appuntamento {
   leadLocalita: string
 }
 
+interface Task {
+  id: number
+  userId: string
+  leadId?: number
+  titolo: string
+  descrizione?: string
+  tipo: string
+  priorita: string
+  stato: string
+  dataScadenza?: string
+  completato: boolean
+  colore: string
+  createdAt: string
+  updatedAt: string
+}
+
 export default function LeadDetailsPage() {
   const { data: session } = useSession()
   const params = useParams()
   const router = useRouter()
   const [lead, setLead] = useState<Lead | null>(null)
   const [appuntamenti, setAppuntamenti] = useState<Appuntamento[]>([])
+  const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (session && params.id) {
       fetchLead()
       fetchAppuntamenti()
+      fetchTasks()
     }
   }, [session, params.id])
 
@@ -75,6 +93,19 @@ export default function LeadDetailsPage() {
       }
     } catch (error) {
       console.error('Error fetching appuntamenti:', error)
+    }
+  }
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks')
+      if (response.ok) {
+        const data = await response.json()
+        const leadTasks = data.filter((t: Task) => t.leadId === parseInt(params.id as string))
+        setTasks(leadTasks)
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error)
     }
   }
 
@@ -135,6 +166,25 @@ export default function LeadDetailsPage() {
       case 'ghost': return 'Ghost'
       case 'ricontattare': return 'Ricontattare'
       default: return 'Lead'
+    }
+  }
+
+  const getPriorityColor = (priorita: string) => {
+    switch (priorita) {
+      case 'urgente': return 'bg-red-100 text-red-800'
+      case 'alta': return 'bg-orange-100 text-orange-800'
+      case 'media': return 'bg-yellow-100 text-yellow-800'
+      case 'bassa': return 'bg-green-100 text-green-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getTaskStatusColor = (stato: string) => {
+    switch (stato) {
+      case 'completato': return 'bg-green-100 text-green-800'
+      case 'in_corso': return 'bg-blue-100 text-blue-800'
+      case 'da_fare': return 'bg-gray-100 text-gray-800'
+      default: return 'bg-gray-100 text-gray-800'
     }
   }
 
@@ -357,6 +407,73 @@ export default function LeadDetailsPage() {
                             : new Date(appuntamento.data) < new Date()
                               ? 'Scaduto'
                               : 'Programmato'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Tasks */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">Task Associati</h2>
+                <Link href={`/dashboard/tasks?leadId=${lead.id}`}>
+                  <Button size="sm">
+                    <CheckSquare className="h-4 w-4 mr-2" />
+                    Nuovo
+                  </Button>
+                </Link>
+              </div>
+
+              {tasks.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <CheckSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <div>Nessun task associato</div>
+                  <Link href={`/dashboard/tasks?leadId=${lead.id}`}>
+                    <Button variant="outline" className="mt-2">
+                      Crea primo task
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {tasks.map((task) => (
+                    <div key={task.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center mb-2 gap-2">
+                            <Target className="h-4 w-4 text-gray-400" />
+                            <span className="font-medium">{task.titolo}</span>
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(task.priorita)}`}>
+                              {task.priorita}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            <div><strong>Tipo:</strong> {task.tipo}</div>
+                            {task.descrizione && (
+                              <div><strong>Descrizione:</strong> {task.descrizione}</div>
+                            )}
+                            {task.dataScadenza && (
+                              <div><strong>Scadenza:</strong> {' '}
+                                {new Date(task.dataScadenza).toLocaleDateString('it-IT', {
+                                  weekday: 'short',
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                              </div>
+                            )}
+                            <div className="mt-2 text-xs text-gray-500">
+                              Creato il {new Date(task.createdAt).toLocaleDateString('it-IT')}
+                            </div>
+                          </div>
+                        </div>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTaskStatusColor(task.stato)}`}>
+                          {task.stato === 'da_fare' ? 'Da fare' : 
+                           task.stato === 'in_corso' ? 'In corso' : 
+                           'Completato'}
                         </span>
                       </div>
                     </div>

@@ -27,7 +27,8 @@ import {
   ExternalLink,
   PhoneCall,
   PhoneOff,
-  X
+  X,
+  CheckSquare
 } from 'lucide-react'
 
 interface Lead {
@@ -652,9 +653,15 @@ export default function LeadsPage() {
                       Appuntamento
                     </Button>
                   </Link>
+                  <Link href={`/dashboard/tasks?leadId=${lead.id}`} className="col-span-1">
+                    <Button className="btn-secondary w-full group">
+                      <CheckSquare className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                      Task
+                    </Button>
+                  </Link>
                   <Button 
                     onClick={() => deleteLead(lead.id, lead.nome)}
-                    className="btn-danger w-full group col-span-1"
+                    className="btn-danger w-full group col-span-2"
                   >
                     <Trash2 className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
                     Elimina

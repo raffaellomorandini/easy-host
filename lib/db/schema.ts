@@ -84,6 +84,7 @@ export const appuntamenti = pgTable('appuntamenti', {
 export const tasks = pgTable('tasks', {
   id: serial('id').primaryKey(),
   userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  leadId: integer('lead_id').references(() => leads.id, { onDelete: 'set null' }), // Riferimento opzionale alla lead
   titolo: varchar('titolo', { length: 255 }).notNull(),
   descrizione: text('descrizione'),
   tipo: varchar('tipo', { length: 50 }).notNull(), // 'task', 'reminder', 'call', 'meeting', 'follow-up', 'personal'

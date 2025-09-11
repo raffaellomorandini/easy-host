@@ -2,6 +2,8 @@
 
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
@@ -21,12 +23,15 @@ import {
   FileText,
   Settings,
   Star,
-  Zap
+  Zap,
+  User,
+  ExternalLink
 } from 'lucide-react'
 
 interface Task {
   id: number
   userId: string
+  leadId?: number
   titolo: string
   descrizione?: string
   tipo: string
@@ -37,15 +42,36 @@ interface Task {
   colore: string
   createdAt: string
   updatedAt: string
+  leadNome?: string
+  leadLocalita?: string
+  leadStatus?: string
+}
+
+interface Lead {
+  id: number
+  nome: string
+  localita: string
+  camere: number
+  telefono?: string
+  email?: string
+  contattato: boolean
+  note?: string
+  status: string
 }
 
 export default function TasksPage() {
   const { data: session } = useSession()
+  const searchParams = useSearchParams()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [showNewTaskForm, setShowNewTaskForm] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [search, setSearch] = useState('')
+  // Stati per la selezione lead nei task
+  const [searchedLeads, setSearchedLeads] = useState<Lead[]>([])
+  const [leadSearchTerm, setLeadSearchTerm] = useState('')
+  const [searching, setSearching] = useState(false)
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [filters, setFilters] = useState({
     stato: 'all' as 'all' | 'da_fare' | 'in_corso' | 'completato',
     priorita: 'all' as 'all' | 'bassa' | 'media' | 'alta' | 'urgente',
@@ -59,9 +85,35 @@ export default function TasksPage() {
     }
   }, [session])
 
+  // Gestisci leadId dalla URL per aprire il modal con lead preselezionata
+  useEffect(() => {
+    const leadId = searchParams.get('leadId')
+    if (leadId && session) {
+      const leadIdNum = parseInt(leadId)
+      if (leadIdNum > 0) {
+        fetchSelectedLead(leadIdNum)
+        setShowNewTaskForm(true)
+      }
+    }
+  }, [searchParams, session])
+
   useEffect(() => {
     filterTasks()
   }, [tasks, filters, search])
+
+  // Effettua la ricerca delle lead quando cambia il termine di ricerca
+  useEffect(() => {
+    if (leadSearchTerm.trim() === '') {
+      setSearchedLeads([])
+      return
+    }
+
+    const timeoutId = setTimeout(() => {
+      searchLeads(leadSearchTerm)
+    }, 300) // Debounce di 300ms
+
+    return () => clearTimeout(timeoutId)
+  }, [leadSearchTerm])
 
   const fetchTasks = async () => {
     try {
@@ -74,6 +126,38 @@ export default function TasksPage() {
       console.error('Error fetching tasks:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const searchLeads = async (search: string) => {
+    if (!search.trim()) {
+      setSearchedLeads([])
+      return
+    }
+
+    setSearching(true)
+    try {
+      const response = await fetch(`/api/leads?search=${encodeURIComponent(search)}&limit=50`)
+      if (response.ok) {
+        const data = await response.json()
+        setSearchedLeads(data.leads)
+      }
+    } catch (error) {
+      console.error('Error searching leads:', error)
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  const fetchSelectedLead = async (leadId: number) => {
+    try {
+      const response = await fetch(`/api/leads?id=${leadId}`)
+      if (response.ok) {
+        const lead = await response.json()
+        setSelectedLead(lead)
+      }
+    } catch (error) {
+      console.error('Error fetching selected lead:', error)
     }
   }
 
@@ -116,6 +200,7 @@ export default function TasksPage() {
           tipo: formData.get('tipo'),
           priorita: formData.get('priorita'),
           dataScadenza: formData.get('dataScadenza'),
+          leadId: selectedLead?.id || null,
           colore: getPriorityColor(formData.get('priorita') as string)
         })
       })
@@ -124,8 +209,11 @@ export default function TasksPage() {
         toast.success('Task creato con successo!')
         setShowNewTaskForm(false)
         fetchTasks()
-        // Reset form
+        // Reset form e stati lead
         ;(e.target as HTMLFormElement).reset()
+        setSelectedLead(null)
+        setLeadSearchTerm('')
+        setSearchedLeads([])
       } else {
         toast.error('Errore durante la creazione del task')
       }
@@ -323,7 +411,12 @@ export default function TasksPage() {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Nuovo Task</h2>
                 <button
-                  onClick={() => setShowNewTaskForm(false)}
+                  onClick={() => {
+                    setShowNewTaskForm(false)
+                    setSelectedLead(null)
+                    setLeadSearchTerm('')
+                    setSearchedLeads([])
+                  }}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   ×
@@ -342,6 +435,89 @@ export default function TasksPage() {
                     className="form-input"
                     placeholder="Inserisci il titolo del task"
                   />
+                </div>
+
+                {/* Selezione Lead (Opzionale) */}
+                <div>
+                  <label htmlFor="leadSearch" className="block text-sm font-medium text-gray-700 mb-1">
+                    Associa a Lead (Opzionale)
+                  </label>
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <input
+                      type="text"
+                      id="leadSearch"
+                      placeholder="Cerca per nome, località, email o telefono..."
+                      value={leadSearchTerm}
+                      onChange={(e) => setLeadSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-10 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    {searching && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {selectedLead ? (
+                    <div className="p-3 bg-blue-50 rounded-lg text-sm border">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium text-blue-900">{selectedLead.nome}</div>
+                          <div className="text-blue-700">
+                            {selectedLead.localita} • {selectedLead.camere} camera{selectedLead.camere > 1 ? 'e' : ''}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedLead(null)
+                            setLeadSearchTerm('')
+                            setSearchedLeads([])
+                          }}
+                          className="text-blue-400 hover:text-blue-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {leadSearchTerm.trim() === '' && (
+                        <div className="p-2 text-sm text-gray-600 bg-gray-50 rounded">
+                          💡 Opzionale: digita per cercare una lead da associare al task
+                        </div>
+                      )}
+                      
+                      {leadSearchTerm && !searching && searchedLeads.length === 0 && (
+                        <div className="p-2 text-sm text-gray-500 bg-gray-50 rounded">
+                          Nessuna lead trovata per "{leadSearchTerm}"
+                        </div>
+                      )}
+                      
+                      {searchedLeads.length > 0 && (
+                        <div className="border border-gray-200 rounded-md max-h-40 overflow-y-auto">
+                          {searchedLeads.map((lead) => (
+                            <button
+                              key={lead.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedLead(lead)
+                                setLeadSearchTerm('')
+                                setSearchedLeads([])
+                              }}
+                              className="w-full text-left p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                            >
+                              <div className="font-medium text-gray-900">{lead.nome}</div>
+                              <div className="text-sm text-gray-600">
+                                {lead.localita} • {lead.camere} camera{lead.camere > 1 ? 'e' : ''}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 <div>
@@ -402,7 +578,12 @@ export default function TasksPage() {
                   </Button>
                   <Button 
                     type="button" 
-                    onClick={() => setShowNewTaskForm(false)}
+                    onClick={() => {
+                      setShowNewTaskForm(false)
+                      setSelectedLead(null)
+                      setLeadSearchTerm('')
+                      setSearchedLeads([])
+                    }}
                     className="btn-secondary"
                   >
                     Annulla
@@ -533,7 +714,7 @@ export default function TasksPage() {
 
               {/* Task Details */}
               <div className="space-y-2 text-sm text-gray-600 mb-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="capitalize">{task.tipo.replace('_', ' ')}</span>
                   {task.dataScadenza && (
                     <span className="flex items-center gap-1">
@@ -543,6 +724,25 @@ export default function TasksPage() {
                   )}
                   <span>Creato: {new Date(task.createdAt).toLocaleDateString('it-IT')}</span>
                 </div>
+                
+                {/* Lead Associata */}
+                {task.leadNome && (
+                  <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border">
+                    <User className="h-4 w-4 text-blue-600" />
+                    <div className="flex-1">
+                      <span className="font-medium text-blue-900">Lead: {task.leadNome}</span>
+                      {task.leadLocalita && (
+                        <span className="text-blue-700 ml-2">• {task.leadLocalita}</span>
+                      )}
+                    </div>
+                    <Link href={`/dashboard/leads/${task.leadId}`}>
+                      <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Vedi
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
