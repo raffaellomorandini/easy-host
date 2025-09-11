@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -59,7 +59,7 @@ interface Lead {
   status: string
 }
 
-export default function TasksPage() {
+function TasksPageContent() {
   const { data: session } = useSession()
   const searchParams = useSearchParams()
   const [tasks, setTasks] = useState<Task[]>([])
@@ -818,5 +818,17 @@ export default function TasksPage() {
         )}
       </motion.div>
     </div>
+  )
+}
+
+export default function TasksPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-20">
+        <div className="text-lg">Caricamento...</div>
+      </div>
+    }>
+      <TasksPageContent />
+    </Suspense>
   )
 }

@@ -33,6 +33,7 @@ export async function GET() {
       })
       .from(tasks)
       .leftJoin(leads, eq(tasks.leadId, leads.id))
+      .where(eq(tasks.userId, session.user.id))
       .orderBy(tasks.createdAt);
     
     return NextResponse.json(userTasks);
