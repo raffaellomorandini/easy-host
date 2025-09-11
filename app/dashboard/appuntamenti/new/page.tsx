@@ -163,13 +163,10 @@ function NewAppuntamentoForm() {
   // Suggerimenti per il tipo di appuntamento
   const tipiAppuntamento = [
     'Incontro conoscitivo',
-    'Sopralluogo',
-    'Presentazione prospetto',
+    'Incontro conoscitivo + sopralluogo',
+    'Incontro di piacere',
     'Firma contratto',
-    'Chiamata telefonica',
-    'Video chiamata',
-    'Incontro follow-up',
-    'Altro'
+    'Sistemazione immobile'
   ]
 
 
@@ -331,16 +328,6 @@ function NewAppuntamentoForm() {
                       <option key={tipo} value={tipo}>{tipo}</option>
                     ))}
                   </select>
-                  
-                  {formData.tipo === 'Altro' && (
-                    <input
-                      type="text"
-                      placeholder="Specifica il tipo di appuntamento"
-                      value={formData.tipo}
-                      onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value }))}
-                      className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  )}
                 </div>
 
                 <div className="md:col-span-2">
