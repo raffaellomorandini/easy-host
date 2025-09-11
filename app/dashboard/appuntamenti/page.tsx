@@ -10,7 +10,6 @@ import {
   Calendar, 
   Clock, 
   MapPin, 
-  User, 
   Plus, 
   CheckCircle, 
   X,
@@ -24,7 +23,8 @@ import {
   Eye,
   Trash2,
   Star,
-  TrendingUp
+  TrendingUp,
+  ExternalLink
 } from 'lucide-react'
 
 interface Appuntamento {
@@ -57,6 +57,7 @@ export default function AppuntamentiPage() {
     appuntamento: null
   })
   const [updating, setUpdating] = useState(false)
+  const [selectedAppForView, setSelectedAppForView] = useState<Appuntamento | null>(null)
 
   useEffect(() => {
     if (session) {
@@ -275,78 +276,59 @@ export default function AppuntamentiPage() {
           </div>
         </div>
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <Calendar className="h-8 w-8 text-blue-400" />
-                <div className="ml-5">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Totale Appuntamenti
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {appuntamenti.length}
-                    </dd>
-                  </dl>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[
+            { title: "Totale", value: appuntamenti.length, icon: Calendar, color: "blue", change: "+12%" },
+            { title: "Prossimi", value: appuntamenti.filter(a => !a.completato && new Date(a.data) >= new Date()).length, icon: Clock, color: "yellow", change: "+8%" },
+            { title: "Completati", value: appuntamenti.filter(a => a.completato).length, icon: CheckCircle, color: "green", change: "+15%" },
+            { title: "Scaduti", value: appuntamenti.filter(a => !a.completato && new Date(a.data) < new Date()).length, icon: X, color: "red", change: "-5%" }
+          ].map((stat, index) => (
+            <motion.div
+              key={stat.title}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: index * 0.1, duration: 0.5 }}
+              className="card card-hover overflow-hidden"
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      {stat.title}
+                    </p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-bold text-gray-900">
+                        {stat.value}
+                      </p>
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        stat.change.startsWith('+') 
+                          ? 'bg-green-100 text-green-700' 
+                          : stat.change.startsWith('-')
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {stat.change}
+                      </span>
+                    </div>
+                  </div>
+                  <div className={`p-3 rounded-lg shadow-lg ${
+                    stat.color === 'blue' ? 'bg-gradient-to-br from-blue-500 to-blue-600' :
+                    stat.color === 'yellow' ? 'bg-gradient-to-br from-yellow-500 to-yellow-600' :
+                    stat.color === 'green' ? 'bg-gradient-to-br from-green-500 to-green-600' :
+                    'bg-gradient-to-br from-red-500 to-red-600'
+                  }`}>
+                    <stat.icon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="flex items-center text-xs text-gray-500">
+                    <TrendingUp className="h-3 w-3 mr-1" />
+                    Vs. settimana scorsa
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <Clock className="h-8 w-8 text-yellow-400" />
-                <div className="ml-5">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Prossimi
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {appuntamenti.filter(a => !a.completato && new Date(a.data) >= new Date()).length}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <CheckCircle className="h-8 w-8 text-green-400" />
-                <div className="ml-5">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Completati
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {appuntamenti.filter(a => a.completato).length}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <X className="h-8 w-8 text-red-400" />
-                <div className="ml-5">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Scaduti
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {appuntamenti.filter(a => !a.completato && new Date(a.data) < new Date()).length}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
+            </motion.div>
+          ))}
         </div>
 
       {/* Advanced Filters */}
@@ -506,7 +488,7 @@ export default function AppuntamentiPage() {
                         
                         <div className="flex items-center gap-3">
                           <div className="p-2 rounded-lg bg-green-50">
-                            <User className="h-4 w-4 text-green-600" />
+                            <MapPin className="h-4 w-4 text-green-600" />
                           </div>
                           <div>
                             <p className="font-medium text-gray-900">Cliente</p>
@@ -537,48 +519,63 @@ export default function AppuntamentiPage() {
                           </span>
                         </label>
 
-                        <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="space-y-3">
+                          {/* Status Action Button */}
                           <Button
                             size="sm"
                             onClick={() => toggleCompletato(appuntamento.id, appuntamento.completato)}
-                            className={`group ${appuntamento.completato ? 'btn-success' : 'btn-primary'}`}
+                            className={`w-full ${
+                              appuntamento.completato 
+                                ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' 
+                                : 'bg-green-600 hover:bg-green-700 text-white'
+                            }`}
                           >
                             {appuntamento.completato ? (
                               <>
-                                <X className="h-4 w-4 mr-1 group-hover:scale-110 transition-transform" />
-                                Riapri
+                                <X className="h-4 w-4 mr-1" />
+                                Riapri Appuntamento
                               </>
                             ) : (
                               <>
-                                <CheckCircle className="h-4 w-4 mr-1 group-hover:scale-110 transition-transform" />
-                                Completa
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Completa Appuntamento
                               </>
                             )}
                           </Button>
-                          
-                          <Link href={`/dashboard/leads/${appuntamento.leadId}`}>
-                            <Button className="btn-secondary group">
-                              <Eye className="h-4 w-4 mr-1 group-hover:scale-110 transition-transform" />
-                              Vedi Lead
+
+                          {/* Management Buttons */}
+                          <div className="grid grid-cols-2 gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button 
+                              onClick={() => setSelectedAppForView(appuntamento)}
+                              className="btn-secondary group/btn"
+                              size="sm"
+                            >
+                              <Eye className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
+                              Dettagli
                             </Button>
-                          </Link>
-
-                          <Button 
-                            onClick={() => handleEditClick(appuntamento)}
-                            className="btn-secondary group"
-                          >
-                            <Edit className="h-4 w-4 mr-1 group-hover:scale-110 transition-transform" />
-                            Modifica
-                          </Button>
-
-                          <Button 
-                            onClick={() => handleDeleteClick(appuntamento)}
-                            className="btn-danger group"
-                            size="sm"
-                          >
-                            <Trash2 className="h-4 w-4 mr-1 group-hover:scale-110 transition-transform" />
-                            Elimina
-                          </Button>
+                            <Link href={`/dashboard/leads/${appuntamento.leadId}`}>
+                              <Button className="btn-secondary group/btn w-full" size="sm">
+                                <MapPin className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
+                                Lead
+                              </Button>
+                            </Link>
+                            <Button 
+                              onClick={() => handleEditClick(appuntamento)}
+                              className="btn-secondary group/btn"
+                              size="sm"
+                            >
+                              <Edit className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
+                              Modifica
+                            </Button>
+                            <Button 
+                              onClick={() => handleDeleteClick(appuntamento)}
+                              className="btn-danger group/btn"
+                              size="sm"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
+                              Elimina
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -850,6 +847,194 @@ export default function AppuntamentiPage() {
                         Elimina Definitivamente
                       </>
                     )}
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Appointment Details Modal */}
+        {selectedAppForView && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className={`h-12 w-12 rounded-full flex items-center justify-center shadow-lg ${
+                      selectedAppForView.completato 
+                        ? 'bg-gradient-to-br from-green-500 to-green-600' 
+                        : new Date(selectedAppForView.data) < new Date()
+                        ? 'bg-gradient-to-br from-red-500 to-red-600'
+                        : 'bg-gradient-to-br from-blue-500 to-blue-600'
+                    }`}>
+                      {selectedAppForView.completato ? (
+                        <CheckCircle className="h-6 w-6 text-white" />
+                      ) : new Date(selectedAppForView.data) < new Date() ? (
+                        <AlertCircle className="h-6 w-6 text-white" />
+                      ) : (
+                        <Calendar className="h-6 w-6 text-white" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">
+                        {selectedAppForView.leadNome} - {selectedAppForView.tipo}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                          selectedAppForView.completato 
+                            ? 'bg-green-100 text-green-800' 
+                            : new Date(selectedAppForView.data) < new Date()
+                            ? 'bg-red-100 text-red-800' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {selectedAppForView.completato ? '✅ Completato' : 
+                           new Date(selectedAppForView.data) < new Date() ? '⚠️ Scaduto' : 
+                           '📅 In programma'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedAppForView(null)}
+                    className="text-gray-400 hover:text-gray-600 p-2"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="space-y-6">
+                  {/* Details Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">Informazioni Appuntamento</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                          <span className="text-sm text-gray-500">Cliente</span>
+                          <span className="text-sm font-medium text-gray-900">{selectedAppForView.leadNome}</span>
+                        </div>
+                        <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                          <span className="text-sm text-gray-500">Località</span>
+                          <span className="text-sm font-medium text-gray-900">{selectedAppForView.leadLocalita}</span>
+                        </div>
+                        <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                          <span className="text-sm text-gray-500">Tipo</span>
+                          <span className="text-sm font-medium text-gray-900">{selectedAppForView.tipo}</span>
+                        </div>
+                        {selectedAppForView.luogo && (
+                          <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                            <span className="text-sm text-gray-500">Luogo</span>
+                            <span className="text-sm font-medium text-gray-900">{selectedAppForView.luogo}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">Data e Ora</h4>
+                      <div className="space-y-3">
+                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                          <div className="flex items-center gap-3">
+                            <Clock className="h-5 w-5 text-blue-600" />
+                            <div>
+                              <p className="font-medium text-blue-900">
+                                {new Date(selectedAppForView.data).toLocaleDateString('it-IT', {
+                                  weekday: 'long',
+                                  day: 'numeric',
+                                  month: 'long',
+                                  year: 'numeric'
+                                })}
+                              </p>
+                              <p className="text-sm text-blue-700">
+                                ore {new Date(selectedAppForView.data).toLocaleTimeString('it-IT', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Creato il {new Date(selectedAppForView.createdAt).toLocaleDateString('it-IT', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Note */}
+                  {selectedAppForView.note && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Note</h4>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <p className="text-gray-700 whitespace-pre-wrap">{selectedAppForView.note}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Lead Association */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Lead Associata</h4>
+                    <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-green-900">{selectedAppForView.leadNome}</p>
+                          <p className="text-sm text-green-700">{selectedAppForView.leadLocalita}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="btn-secondary"
+                          onClick={() => window.open(`/dashboard/leads/${selectedAppForView.leadId}`, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+                  <div className="flex gap-3">
+                    {!selectedAppForView.completato && (
+                      <Button
+                        onClick={() => {
+                          toggleCompletato(selectedAppForView.id, selectedAppForView.completato)
+                          setSelectedAppForView(null)
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Completa Appuntamento
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => {
+                        handleEditClick(selectedAppForView)
+                        setSelectedAppForView(null)
+                      }}
+                      className="btn-secondary"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Modifica
+                    </Button>
+                  </div>
+                  <Button
+                    onClick={() => setSelectedAppForView(null)}
+                    variant="outline"
+                  >
+                    Chiudi
                   </Button>
                 </div>
               </div>

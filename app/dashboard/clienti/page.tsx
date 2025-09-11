@@ -178,62 +178,59 @@ export default function ClientiPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="p-5">
-            <div className="flex items-center">
-              <Trophy className="h-8 w-8 text-green-600" />
-              <div className="ml-5">
-                <p className="text-sm font-medium text-gray-600">Clienti Confermati</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {clientiConfermati.length}
-                </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {[
+          { title: "Confermati", value: clientiConfermati.length, icon: Trophy, color: "green", change: "+12%" },
+          { title: "In Attesa", value: clientiInAttesa.length, icon: Clock, color: "yellow", change: "+8%" },
+          { title: "Appuntamenti", value: appuntamenti.length, icon: Calendar, color: "blue", change: "+15%" },
+          { title: "Conversione", value: `${clienti.length > 0 ? Math.round((clientiConfermati.length / clienti.length) * 100) : 0}%`, icon: TrendingUp, color: "purple", change: "+5%" }
+        ].map((stat, index) => (
+          <motion.div
+            key={stat.title}
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: index * 0.1, duration: 0.5 }}
+            className="card card-hover overflow-hidden"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    {stat.title}
+                  </p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-2xl font-bold text-gray-900">
+                      {stat.value}
+                    </p>
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                      stat.change.startsWith('+') 
+                        ? 'bg-green-100 text-green-700' 
+                        : stat.change.startsWith('-')
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {stat.change}
+                    </span>
+                  </div>
+                </div>
+                <div className={`p-3 rounded-lg shadow-lg ${
+                  stat.color === 'green' ? 'bg-gradient-to-br from-green-500 to-green-600' :
+                  stat.color === 'yellow' ? 'bg-gradient-to-br from-yellow-500 to-yellow-600' :
+                  stat.color === 'blue' ? 'bg-gradient-to-br from-blue-500 to-blue-600' :
+                  'bg-gradient-to-br from-purple-500 to-purple-600'
+                }`}>
+                  <stat.icon className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center text-xs text-gray-500">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  Vs. mese scorso
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="p-5">
-            <div className="flex items-center">
-              <Clock className="h-8 w-8 text-yellow-600" />
-              <div className="ml-5">
-                <p className="text-sm font-medium text-gray-600">In Attesa di Conferma</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {clientiInAttesa.length}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="p-5">
-            <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-blue-600" />
-              <div className="ml-5">
-                <p className="text-sm font-medium text-gray-600">Appuntamenti Totali</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {appuntamenti.length}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="p-5">
-            <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-purple-600" />
-              <div className="ml-5">
-                <p className="text-sm font-medium text-gray-600">Tasso Conversione</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {clienti.length > 0 ? Math.round((clientiConfermati.length / clienti.length) * 100) : 0}%
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+          </motion.div>
+        ))}
       </div>
 
       {/* Filters */}
@@ -395,40 +392,44 @@ export default function ClientiPage() {
                 </div>
 
                 {/* Status Actions */}
-                <div className="flex gap-2 mb-3">
+                <div className="space-y-3">
+                  {/* Main Status Action */}
                   {cliente.status === 'cliente_attesa' && (
                     <Button
-                      size="sm"
                       onClick={() => updateClienteStatus(cliente.id, 'cliente_confermato')}
-                      className="btn-primary"
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      size="sm"
                     >
+                      <Trophy className="h-4 w-4 mr-1" />
                       Conferma Cliente
                     </Button>
                   )}
                   {cliente.status === 'cliente_confermato' && (
                     <Button
-                      size="sm"
                       onClick={() => updateClienteStatus(cliente.id, 'cliente_attesa')}
-                      className="btn-secondary"
+                      className="w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800"
+                      size="sm"
                     >
-                      ← In Attesa
+                      <Clock className="h-4 w-4 mr-1" />
+                      Riporta in Attesa
                     </Button>
                   )}
-                </div>
-                
-                <div className="flex gap-2">
-                  <Link href={`/dashboard/leads/${cliente.id}`} className="flex-1">
-                    <Button className="btn-secondary w-full">
-                      <Eye className="h-4 w-4 mr-1" />
-                      Dettagli
-                    </Button>
-                  </Link>
-                  <Link href={`/dashboard/appuntamenti/new?leadId=${cliente.id}`}>
-                    <Button className="btn-primary">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      Appuntamento
-                    </Button>
-                  </Link>
+
+                  {/* Management Actions */}
+                  <div className="grid grid-cols-2 gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Link href={`/dashboard/leads/${cliente.id}`}>
+                      <Button className="btn-secondary group/btn w-full" size="sm">
+                        <Eye className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
+                        Dettagli
+                      </Button>
+                    </Link>
+                    <Link href={`/dashboard/appuntamenti/new?leadId=${cliente.id}`}>
+                      <Button className="btn-primary group/btn w-full" size="sm">
+                        <Calendar className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
+                        Appuntamento
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </motion.div>

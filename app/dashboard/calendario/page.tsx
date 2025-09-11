@@ -318,116 +318,217 @@ export default function CalendarioPage() {
   return (
     <div>
       {/* Page Header */}
-      <div className="flex justify-between items-center mb-8">
+      <motion.div 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="flex justify-between items-center mb-8"
+      >
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Calendario & Task</h1>
-          <p className="text-gray-600 mt-1">Vista unificata di appuntamenti e task</p>
+          <h1 className="text-2xl font-bold text-gray-900">Calendario & Task Manager</h1>
+          <p className="text-gray-600 mt-1">
+            Vista unificata di appuntamenti e task • {getCalendarEvents().length} eventi totali
+          </p>
         </div>
         <div className="flex gap-3">
-          <Button onClick={() => setShowFilters(!showFilters)} className="btn-secondary">
-            <Filter className="h-4 w-4 mr-2" />
-            Filtri
+          <Button 
+            onClick={() => setShowFilters(!showFilters)} 
+            className={`${showFilters ? 'btn-primary' : 'btn-secondary'} group`}
+          >
+            <Filter className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+            {showFilters ? 'Nascondi Filtri' : 'Mostra Filtri'}
           </Button>
-          <Button onClick={exportCalendar} className="btn-secondary">
-            <Download className="h-4 w-4 mr-2" />
-            Esporta
+          <Button onClick={exportCalendar} className="btn-secondary group">
+            <Download className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+            Esporta CSV
           </Button>
-          <Button onClick={() => setShowEventModal(true)} className="btn-primary">
-            <Plus className="h-4 w-4 mr-2" />
-            Nuovo Evento
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => window.open('/dashboard/appuntamenti/new', '_blank')} 
+              className="btn-secondary group"
+            >
+              <CalendarIcon className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+              Appuntamento
+            </Button>
+            <Button 
+              onClick={() => window.open('/dashboard/tasks', '_blank')} 
+              className="btn-primary group"
+            >
+              <Plus className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+              Nuovo Task
+            </Button>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* View Toggle */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="flex bg-gray-100 rounded-lg p-1">
-          <Button
-            onClick={() => setView('calendar')}
-            size="sm"
-            className={view === 'calendar' ? 'btn-primary' : 'btn-secondary'}
-          >
-            <CalendarIcon className="h-4 w-4 mr-1" />
-            Calendario
-          </Button>
-          <Button
-            onClick={() => setView('list')}
-            size="sm"
-            className={view === 'list' ? 'btn-primary' : 'btn-secondary'}
-          >
-            <List className="h-4 w-4 mr-1" />
-            Lista
-          </Button>
+      {/* View Toggle & Controls */}
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+        className="flex items-center justify-between mb-6"
+      >
+        <div className="flex items-center gap-4">
+          {/* View Toggle */}
+          <div className="flex bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl p-1 shadow-inner">
+            <Button
+              onClick={() => setView('calendar')}
+              size="sm"
+              className={`${view === 'calendar' ? 'bg-white shadow-md text-blue-600' : 'text-gray-600 hover:text-gray-900'} transition-all duration-200`}
+            >
+              <CalendarIcon className="h-4 w-4 mr-1" />
+              Calendario
+            </Button>
+            <Button
+              onClick={() => setView('list')}
+              size="sm"
+              className={`${view === 'list' ? 'bg-white shadow-md text-blue-600' : 'text-gray-600 hover:text-gray-900'} transition-all duration-200`}
+            >
+              <List className="h-4 w-4 mr-1" />
+              Lista
+            </Button>
+          </div>
+
+          {/* Calendar View Controls */}
+          {view === 'calendar' && (
+            <div className="flex gap-1 bg-white rounded-lg border border-gray-200 p-1">
+              <Button
+                onClick={() => calendarRef.current?.getApi().changeView('dayGridMonth')}
+                size="sm"
+                className="btn-secondary"
+              >
+                📅 Mese
+              </Button>
+              <Button
+                onClick={() => calendarRef.current?.getApi().changeView('timeGridWeek')}
+                size="sm"
+                className="btn-secondary"
+              >
+                📊 Settimana
+              </Button>
+              <Button
+                onClick={() => calendarRef.current?.getApi().changeView('timeGridDay')}
+                size="sm"
+                className="btn-secondary"
+              >
+                🗓️ Giorno
+              </Button>
+            </div>
+          )}
         </div>
 
-        <div className="flex gap-2">
-          <Button
-            onClick={() => calendarRef.current?.getApi().changeView('dayGridMonth')}
-            size="sm"
-            className="btn-secondary"
-          >
-            Mese
-          </Button>
-          <Button
-            onClick={() => calendarRef.current?.getApi().changeView('timeGridWeek')}
-            size="sm"
-            className="btn-secondary"
-          >
-            Settimana
-          </Button>
-          <Button
-            onClick={() => calendarRef.current?.getApi().changeView('timeGridDay')}
-            size="sm"
-            className="btn-secondary"
-          >
-            Giorno
-          </Button>
+        {/* Quick Stats */}
+        <div className="flex items-center gap-4 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+            <span>{appuntamenti.length} Appuntamenti</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+            <span>{tasks.length} Tasks</span>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Legend */}
-      <div className="card mb-6">
-        <div className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Info className="h-5 w-5 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Legenda</h3>
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+        className="card mb-6"
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-100">
+                <Info className="h-5 w-5 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Legenda Colori</h3>
+            </div>
+            <div className="text-sm text-gray-500">
+              {getCalendarEvents().length} eventi visualizzati
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-blue-500"></div>
-              <span className="text-gray-700">Appuntamenti Programmati</span>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Appuntamenti */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">📅 Appuntamenti</h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-lg bg-blue-500 shadow-sm"></div>
+                  <span className="text-sm text-gray-700">Programmati</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-lg bg-green-500 shadow-sm"></div>
+                  <span className="text-sm text-gray-700">Completati</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-green-500"></div>
-              <span className="text-gray-700">Appuntamenti Completati</span>
+
+            {/* Tasks per Priorità */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">🎯 Task per Priorità</h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-lg bg-red-600 shadow-sm"></div>
+                  <span className="text-sm text-gray-700">Urgenti</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-lg bg-orange-500 shadow-sm"></div>
+                  <span className="text-sm text-gray-700">Alta</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-lg bg-yellow-500 shadow-sm"></div>
+                  <span className="text-sm text-gray-700">Media</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-lg bg-green-600 shadow-sm"></div>
+                  <span className="text-sm text-gray-700">Bassa</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-red-600"></div>
-              <span className="text-gray-700">Task Urgenti</span>
+
+            {/* Tasks per Tipo */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">📋 Task per Tipo</h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-lg bg-purple-500 shadow-sm"></div>
+                  <span className="text-sm text-gray-700">Prospetti</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-lg bg-blue-600 shadow-sm"></div>
+                  <span className="text-sm text-gray-700">Chiamate</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-lg bg-red-500 shadow-sm"></div>
+                  <span className="text-sm text-gray-700">Importanti</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-lg bg-gray-500 shadow-sm"></div>
+                  <span className="text-sm text-gray-700">Generiche</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-orange-500"></div>
-              <span className="text-gray-700">Task Alta Priorità</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-yellow-500"></div>
-              <span className="text-gray-700">Task Media Priorità</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-green-600"></div>
-              <span className="text-gray-700">Task Bassa Priorità</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-gray-500"></div>
-              <span className="text-gray-700">Task Generali</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Circle className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-700">Eventi con Lead Associata</span>
+
+            {/* Collegamenti */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">🔗 Collegamenti</h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <Circle className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm text-gray-700">Con Lead</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Square className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-700">Senza Lead</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Advanced Filters */}
       {showFilters && (
@@ -600,7 +701,12 @@ export default function CalendarioPage() {
       )}
 
       {/* Calendar Container */}
-      <div className="card">
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.4, duration: 0.5 }}
+        className="card"
+      >
         <div className="p-6">
           {view === 'calendar' ? (
             <FullCalendar
@@ -676,7 +782,7 @@ export default function CalendarioPage() {
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Event Details Modal */}
       {showEventModal && selectedEvent && (
