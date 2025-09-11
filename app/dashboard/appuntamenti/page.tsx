@@ -633,7 +633,7 @@ export default function AppuntamentiPage() {
         {/* Edit Modal */}
         {editModal.isOpen && editModal.appuntamento && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
             onClick={handleEditCancel}
           >
             <motion.div 
@@ -771,7 +771,7 @@ export default function AppuntamentiPage() {
         {/* Delete Confirmation Modal */}
         {deleteModal.isOpen && deleteModal.appuntamento && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
             onClick={handleDeleteCancel}
           >
             <motion.div 
