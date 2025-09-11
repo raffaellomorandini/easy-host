@@ -25,7 +25,10 @@ import {
   Eye,
   Edit3,
   Trash2,
-  CheckSquare
+  CheckSquare,
+  Info,
+  Circle,
+  Square
 } from 'lucide-react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -78,7 +81,12 @@ export default function CalendarioPage() {
     showAppuntamenti: true,
     showTasks: true,
     showCompleted: false,
+    showOverdue: true,
+    showWithLead: true,
+    showWithoutLead: true,
     priorita: 'all' as 'all' | 'bassa' | 'media' | 'alta' | 'urgente',
+    tipoAppuntamento: 'all' as 'all' | 'Incontro conoscitivo' | 'Incontro conoscitivo + sopralluogo' | 'Incontro di piacere' | 'Firma contratto' | 'Sistemazione immobile',
+    tipoTask: 'all' as 'all' | 'amministrativo' | 'commerciale' | 'tecnico' | 'marketing',
     search: ''
   })
 
@@ -122,6 +130,8 @@ export default function CalendarioPage() {
       appuntamenti
         .filter(app => {
           if (!filters.showCompleted && app.completato) return false
+          if (!filters.showOverdue && !app.completato && new Date(app.data) < new Date()) return false
+          if (filters.tipoAppuntamento !== 'all' && app.tipo !== filters.tipoAppuntamento) return false
           if (filters.search && !app.leadNome.toLowerCase().includes(filters.search.toLowerCase()) &&
               !app.tipo.toLowerCase().includes(filters.search.toLowerCase())) return false
           return true
@@ -146,7 +156,11 @@ export default function CalendarioPage() {
         .filter(task => {
           if (!filters.showCompleted && task.completato) return false
           if (filters.priorita !== 'all' && task.priorita !== filters.priorita) return false
-          if (filters.search && !task.titolo.toLowerCase().includes(filters.search.toLowerCase())) return false
+          if (filters.tipoTask !== 'all' && task.tipo !== filters.tipoTask) return false
+          if (!filters.showWithLead && task.leadNome) return false
+          if (!filters.showWithoutLead && !task.leadNome) return false
+          if (filters.search && !task.titolo.toLowerCase().includes(filters.search.toLowerCase()) &&
+              !(task.leadNome && task.leadNome.toLowerCase().includes(filters.search.toLowerCase()))) return false
           return true
         })
         .forEach(task => {
@@ -309,6 +323,50 @@ export default function CalendarioPage() {
         </div>
       </div>
 
+      {/* Legend */}
+      <div className="card mb-6">
+        <div className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Info className="h-5 w-5 text-blue-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Legenda</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-blue-500"></div>
+              <span className="text-gray-700">Appuntamenti Programmati</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-green-500"></div>
+              <span className="text-gray-700">Appuntamenti Completati</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-red-600"></div>
+              <span className="text-gray-700">Task Urgenti</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-orange-500"></div>
+              <span className="text-gray-700">Task Alta Priorità</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-yellow-500"></div>
+              <span className="text-gray-700">Task Media Priorità</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-green-600"></div>
+              <span className="text-gray-700">Task Bassa Priorità</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gray-500"></div>
+              <span className="text-gray-700">Task Generali</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Circle className="w-4 h-4 text-gray-400" />
+              <span className="text-gray-700">Eventi con Lead Associata</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Advanced Filters */}
       {showFilters && (
         <motion.div 
@@ -318,7 +376,7 @@ export default function CalendarioPage() {
           className="card mb-6 overflow-hidden"
         >
           <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Cerca eventi</label>
                 <div className="relative">
@@ -373,17 +431,107 @@ export default function CalendarioPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Mostra completati</label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={filters.showCompleted}
-                    onChange={(e) => setFilters(prev => ({ ...prev, showCompleted: e.target.checked }))}
-                    className="mr-2"
-                  />
-                  <span className="text-sm">Includi completati</span>
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Stati eventi</label>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={filters.showCompleted}
+                      onChange={(e) => setFilters(prev => ({ ...prev, showCompleted: e.target.checked }))}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Includi completati</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={filters.showOverdue}
+                      onChange={(e) => setFilters(prev => ({ ...prev, showOverdue: e.target.checked }))}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Includi scaduti</span>
+                  </label>
+                </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Associazione Lead</label>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={filters.showWithLead}
+                      onChange={(e) => setFilters(prev => ({ ...prev, showWithLead: e.target.checked }))}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Con lead associata</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={filters.showWithoutLead}
+                      onChange={(e) => setFilters(prev => ({ ...prev, showWithoutLead: e.target.checked }))}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Senza lead</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo Appuntamento</label>
+                <select
+                  value={filters.tipoAppuntamento}
+                  onChange={(e) => setFilters(prev => ({ ...prev, tipoAppuntamento: e.target.value as any }))}
+                  className="form-input text-sm"
+                >
+                  <option value="all">Tutti i tipi</option>
+                  <option value="Incontro conoscitivo">Incontro conoscitivo</option>
+                  <option value="Incontro conoscitivo + sopralluogo">Incontro + sopralluogo</option>
+                  <option value="Incontro di piacere">Incontro di piacere</option>
+                  <option value="Firma contratto">Firma contratto</option>
+                  <option value="Sistemazione immobile">Sistemazione immobile</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo Task</label>
+                <select
+                  value={filters.tipoTask}
+                  onChange={(e) => setFilters(prev => ({ ...prev, tipoTask: e.target.value as any }))}
+                  className="form-input text-sm"
+                >
+                  <option value="all">Tutti i tipi</option>
+                  <option value="amministrativo">Amministrativo</option>
+                  <option value="commerciale">Commerciale</option>
+                  <option value="tecnico">Tecnico</option>
+                  <option value="marketing">Marketing</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Reset Filters Button */}
+            <div className="pt-4 border-t border-gray-200">
+              <Button 
+                onClick={() => setFilters({
+                  showAppuntamenti: true,
+                  showTasks: true,
+                  showCompleted: false,
+                  showOverdue: true,
+                  showWithLead: true,
+                  showWithoutLead: true,
+                  priorita: 'all',
+                  tipoAppuntamento: 'all',
+                  tipoTask: 'all',
+                  search: ''
+                })}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Reset Filtri
+              </Button>
             </div>
           </div>
         </motion.div>
