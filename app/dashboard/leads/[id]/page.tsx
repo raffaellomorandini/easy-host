@@ -188,6 +188,16 @@ export default function LeadDetailsPage() {
     }
   }
 
+  const getTaskTypeText = (tipo: string) => {
+    switch (tipo) {
+      case 'prospetti_da_fare': return 'Prospetti da fare'
+      case 'chiamate_da_fare': return 'Chiamate da fare'
+      case 'task_importanti': return 'Task importanti'
+      case 'task_generiche': return 'Task generiche'
+      default: return tipo.replace(/_/g, ' ')
+    }
+  }
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">
       <div className="text-lg">Caricamento dettagli...</div>
@@ -451,7 +461,7 @@ export default function LeadDetailsPage() {
                             </span>
                           </div>
                           <div className="text-sm text-gray-600">
-                            <div><strong>Tipo:</strong> {task.tipo}</div>
+                            <div><strong>Tipo:</strong> {getTaskTypeText(task.tipo)}</div>
                             {task.descrizione && (
                               <div><strong>Descrizione:</strong> {task.descrizione}</div>
                             )}

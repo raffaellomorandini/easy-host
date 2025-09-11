@@ -31,9 +31,10 @@ export async function GET() {
         leadLocalita: leads.localita,
         leadStatus: leads.status
       })
-      .from(tasks)
-      .leftJoin(leads, eq(tasks.leadId, leads.id))
-      .orderBy(tasks.createdAt);
+        .from(tasks)
+        .leftJoin(leads, eq(tasks.leadId, leads.id))
+        .where(eq(tasks.userId, session.user.id))
+        .orderBy(tasks.createdAt);
     
     return NextResponse.json(userTasks);
   } catch (error) {

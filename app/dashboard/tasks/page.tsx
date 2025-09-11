@@ -75,7 +75,7 @@ function TasksPageContent() {
   const [filters, setFilters] = useState({
     stato: 'all' as 'all' | 'da_fare' | 'in_corso' | 'completato',
     priorita: 'all' as 'all' | 'bassa' | 'media' | 'alta' | 'urgente',
-    tipo: 'all' as 'all' | 'amministrativo' | 'commerciale' | 'tecnico' | 'marketing'
+    tipo: 'all' as 'all' | 'prospetti_da_fare' | 'chiamate_da_fare' | 'task_importanti' | 'task_generiche'
   })
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
 
@@ -308,10 +308,10 @@ function TasksPageContent() {
 
   const getTypeIcon = (tipo: string) => {
     switch (tipo) {
-      case 'amministrativo': return <FileText className="h-4 w-4" />
-      case 'commerciale': return <Target className="h-4 w-4" />
-      case 'tecnico': return <Settings className="h-4 w-4" />
-      case 'marketing': return <Star className="h-4 w-4" />
+      case 'prospetti_da_fare': return <User className="h-4 w-4" />
+      case 'chiamate_da_fare': return <Clock className="h-4 w-4" />
+      case 'task_importanti': return <Star className="h-4 w-4" />
+      case 'task_generiche': return <FileText className="h-4 w-4" />
       default: return <FileText className="h-4 w-4" />
     }
   }
@@ -539,10 +539,10 @@ function TasksPageContent() {
                     </label>
                     <select name="tipo" required className="form-select">
                       <option value="">Seleziona tipo</option>
-                      <option value="amministrativo">Amministrativo</option>
-                      <option value="commerciale">Commerciale</option>
-                      <option value="tecnico">Tecnico</option>
-                      <option value="marketing">Marketing</option>
+                      <option value="prospetti_da_fare">Prospetti da fare</option>
+                      <option value="chiamate_da_fare">Chiamate da fare</option>
+                      <option value="task_importanti">Task importanti</option>
+                      <option value="task_generiche">Task generiche</option>
                     </select>
                   </div>
 
@@ -649,10 +649,10 @@ function TasksPageContent() {
                 className="form-select"
               >
                 <option value="all">Tutti i tipi</option>
-                <option value="amministrativo">Amministrativo</option>
-                <option value="commerciale">Commerciale</option>
-                <option value="tecnico">Tecnico</option>
-                <option value="marketing">Marketing</option>
+                <option value="prospetti_da_fare">Prospetti da fare</option>
+                <option value="chiamate_da_fare">Chiamate da fare</option>
+                <option value="task_importanti">Task importanti</option>
+                <option value="task_generiche">Task generiche</option>
               </select>
             </div>
           </div>

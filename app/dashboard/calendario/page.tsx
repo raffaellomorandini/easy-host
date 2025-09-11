@@ -86,7 +86,7 @@ export default function CalendarioPage() {
     showWithoutLead: true,
     priorita: 'all' as 'all' | 'bassa' | 'media' | 'alta' | 'urgente',
     tipoAppuntamento: 'all' as 'all' | 'Incontro conoscitivo' | 'Incontro conoscitivo + sopralluogo' | 'Incontro di piacere' | 'Firma contratto' | 'Sistemazione immobile',
-    tipoTask: 'all' as 'all' | 'amministrativo' | 'commerciale' | 'tecnico' | 'marketing',
+    tipoTask: 'all' as 'all' | 'prospetti_da_fare' | 'chiamate_da_fare' | 'task_importanti' | 'task_generiche',
     search: ''
   })
 
@@ -225,6 +225,16 @@ export default function CalendarioPage() {
       console.error('Error updating event:', error)
       toast.error('Errore durante lo spostamento')
       info.revert()
+    }
+  }
+
+  const getTaskTypeText = (tipo: string) => {
+    switch (tipo) {
+      case 'prospetti_da_fare': return 'Prospetti da fare'
+      case 'chiamate_da_fare': return 'Chiamate da fare'
+      case 'task_importanti': return 'Task importanti'
+      case 'task_generiche': return 'Task generiche'
+      default: return tipo.replace(/_/g, ' ')
     }
   }
 
@@ -502,10 +512,10 @@ export default function CalendarioPage() {
                   className="form-input text-sm"
                 >
                   <option value="all">Tutti i tipi</option>
-                  <option value="amministrativo">Amministrativo</option>
-                  <option value="commerciale">Commerciale</option>
-                  <option value="tecnico">Tecnico</option>
-                  <option value="marketing">Marketing</option>
+                  <option value="prospetti_da_fare">Prospetti da fare</option>
+                  <option value="chiamate_da_fare">Chiamate da fare</option>
+                  <option value="task_importanti">Task importanti</option>
+                  <option value="task_generiche">Task generiche</option>
                 </select>
               </div>
             </div>
@@ -658,7 +668,7 @@ export default function CalendarioPage() {
                   <div>
                     <h3 className="font-medium text-gray-900 mb-2">Dettagli Task</h3>
                     <div className="space-y-2 text-sm">
-                      <p><strong>Tipo:</strong> {selectedEvent.extendedProps?.data?.tipo}</p>
+                      <p><strong>Tipo:</strong> {getTaskTypeText(selectedEvent.extendedProps?.data?.tipo)}</p>
                       <p><strong>Priorità:</strong> {selectedEvent.extendedProps?.data?.priorita}</p>
                       <p><strong>Stato:</strong> {selectedEvent.extendedProps?.data?.stato}</p>
                       {selectedEvent.extendedProps?.data?.leadNome && (
