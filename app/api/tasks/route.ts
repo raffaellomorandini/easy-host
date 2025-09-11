@@ -110,12 +110,18 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID è richiesto' }, { status: 400 });
     }
 
+    // Gestisci dataScadenza null/undefined
+    if (updateData.dataScadenza === null || updateData.dataScadenza === '') {
+      updateData.dataScadenza = null;
+    } else if (updateData.dataScadenza) {
+      updateData.dataScadenza = new Date(updateData.dataScadenza);
+    }
+
     updateData.updatedAt = new Date();
     
     const updatedTask = await db
       .update(tasks)
       .set(updateData)
-      .where(and(eq(tasks.id, id), eq(tasks.userId, session.user.id)))
       .returning();
 
     if (updatedTask.length === 0) {

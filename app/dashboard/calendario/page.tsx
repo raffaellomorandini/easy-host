@@ -204,7 +204,7 @@ export default function CalendarioPage() {
         const response = await fetch('/api/appuntamenti', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: eventData.id, data: newDate.toISOString() })
+          body: JSON.stringify({ id: eventData.id, data: newDate.toISOString().slice(0, 19) })
         })
         if (response.ok) {
           toast.success('Appuntamento spostato!')
@@ -214,7 +214,7 @@ export default function CalendarioPage() {
         const response = await fetch('/api/tasks', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: eventData.id, dataScadenza: newDate.toISOString() })
+          body: JSON.stringify({ id: eventData.id, dataScadenza: newDate.toISOString().slice(0, 19) })
         })
         if (response.ok) {
           toast.success('Task spostato!')
@@ -235,6 +235,58 @@ export default function CalendarioPage() {
       case 'task_importanti': return 'Task importanti'
       case 'task_generiche': return 'Task generiche'
       default: return tipo.replace(/_/g, ' ')
+    }
+  }
+
+  const handleEditEvent = (event: any) => {
+    const eventType = event.extendedProps?.type
+    const eventData = event.extendedProps?.data
+    
+    if (eventType === 'appuntamento') {
+      // Reindirizza alla pagina di modifica appuntamenti
+      window.location.href = `/dashboard/appuntamenti`
+    } else if (eventType === 'task') {
+      // Reindirizza alla pagina di modifica task
+      window.location.href = `/dashboard/tasks`
+    }
+    setShowEventModal(false)
+  }
+
+  const handleDeleteEvent = async (event: any) => {
+    const eventType = event.extendedProps?.type
+    const eventData = event.extendedProps?.data
+    
+    if (!eventData?.id) return
+    
+    const confirmed = window.confirm(
+      `Sei sicuro di voler eliminare ${eventType === 'appuntamento' ? "l'appuntamento" : 'il task'} "${event.title}"?`
+    )
+    
+    if (!confirmed) return
+    
+    try {
+      const endpoint = eventType === 'appuntamento' ? '/api/appuntamenti' : '/api/tasks'
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: eventData.id })
+      })
+      
+      if (response.ok) {
+        toast.success(`${eventType === 'appuntamento' ? 'Appuntamento' : 'Task'} eliminato con successo!`)
+        setShowEventModal(false)
+        // Ricarica i dati
+        if (eventType === 'appuntamento') {
+          fetchAppuntamenti()
+        } else {
+          fetchTasks()
+        }
+      } else {
+        toast.error('Errore durante l\'eliminazione')
+      }
+    } catch (error) {
+      console.error('Error deleting event:', error)
+      toast.error('Errore durante l\'eliminazione')
     }
   }
 
@@ -687,11 +739,17 @@ export default function CalendarioPage() {
               </div>
 
               <div className="flex gap-3 mt-6">
-                <Button className="btn-primary">
+                <Button 
+                  onClick={() => handleEditEvent(selectedEvent)}
+                  className="btn-primary"
+                >
                   <Edit3 className="h-4 w-4 mr-2" />
                   Modifica
                 </Button>
-                <Button className="btn-danger">
+                <Button 
+                  onClick={() => handleDeleteEvent(selectedEvent)}
+                  className="btn-danger"
+                >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Elimina
                 </Button>

@@ -101,6 +101,11 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID è richiesto' }, { status: 400 });
     }
 
+    // Gestisci la data se presente
+    if (updateData.data) {
+      updateData.data = new Date(updateData.data);
+    }
+    
     updateData.updatedAt = new Date();
     
     const updatedAppuntamento = await db
