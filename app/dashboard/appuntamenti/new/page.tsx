@@ -4,8 +4,12 @@ import { useSession } from 'next-auth/react'
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { DateTimePicker } from '@/components/ui/date-time-picker'
 import Link from 'next/link'
-import { ArrowLeft, Save, X, Search } from 'lucide-react'
+import { ArrowLeft, Save, X, Search, Calendar, User, MapPin } from 'lucide-react'
 
 interface Lead {
   id: number
@@ -30,7 +34,7 @@ function NewAppuntamentoForm() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [formData, setFormData] = useState({
     leadId: parseInt(searchParams.get('leadId') || '0') || 0,
-    data: '',
+    data: undefined as Date | undefined,
     tipo: '',
     luogo: '',
     note: '',
@@ -122,7 +126,7 @@ function NewAppuntamentoForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          data: new Date(formData.data).toISOString()
+          data: formData.data?.toISOString()
         })
       })
 
@@ -141,24 +145,6 @@ function NewAppuntamentoForm() {
     }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
-               name === 'leadId' ? parseInt(value) || 0 : value
-    }))
-
-    // Se viene selezionata una lead dal dropdown, aggiornala
-    if (name === 'leadId' && value !== '0') {
-      const lead = searchedLeads.find(l => l.id === parseInt(value))
-      if (lead) {
-        setSelectedLead(lead)
-      }
-    } else if (name === 'leadId' && value === '0') {
-      setSelectedLead(null)
-    }
-  }
 
   // Suggerimenti per il tipo di appuntamento
   const tipiAppuntamento = [
@@ -171,21 +157,26 @@ function NewAppuntamentoForm() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-4">
               <Link href="/dashboard/appuntamenti">
-                <Button variant="outline" size="sm" className="mr-4">
+                <Button variant="outline" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Tutti gli Appuntamenti
                 </Button>
               </Link>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Nuovo Appuntamento</h1>
-                <p className="text-gray-600">Programma un nuovo appuntamento con una lead</p>
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-green-500 to-blue-600 flex items-center justify-center">
+                  <Calendar className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Nuovo Appuntamento</h1>
+                  <p className="text-gray-600">Programma un nuovo appuntamento con una lead</p>
+                </div>
               </div>
             </div>
           </div>
@@ -194,12 +185,20 @@ function NewAppuntamentoForm() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow">
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
             {/* Selezione Lead */}
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Lead di Riferimento</h2>
-              <div className="grid grid-cols-1 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Lead di Riferimento
+                </CardTitle>
+                <CardDescription>
+                  Seleziona la lead per cui creare l'appuntamento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-6">
                 <div>
                   <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
                     Cerca Lead
@@ -221,32 +220,41 @@ function NewAppuntamentoForm() {
                     )}
                   </div>
                   
-                  <label htmlFor="leadId" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="leadId" className="block text-sm font-medium text-gray-700 mb-2">
                     Seleziona Lead *
                   </label>
-                  <select
-                    id="leadId"
-                    name="leadId"
-                    required
-                    value={formData.leadId}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    disabled={searchTerm.trim() === '' && !selectedLead}
+                  <Select 
+                    value={selectedLead?.id.toString() || '0'} 
+                    onValueChange={(value) => {
+                      if (value === '0') {
+                        setSelectedLead(null)
+                        setFormData(prev => ({ ...prev, leadId: 0 }))
+                      } else {
+                        const lead = searchedLeads.find(l => l.id === parseInt(value))
+                        if (lead) {
+                          setSelectedLead(lead)
+                          setFormData(prev => ({ ...prev, leadId: lead.id }))
+                        }
+                      }
+                    }}
                   >
-                    <option value={0}>
-                      {searchTerm.trim() === '' ? 'Inizia a digitare per cercare lead...' : 'Seleziona una lead...'}
-                    </option>
-                    {selectedLead && formData.leadId === selectedLead.id && (
-                      <option key={selectedLead.id} value={selectedLead.id}>
-                        {selectedLead.nome} - {selectedLead.localita} ({selectedLead.camere} camera{selectedLead.camere > 1 ? 'e' : ''})
-                      </option>
-                    )}
-                    {searchedLeads.map((lead) => (
-                      <option key={lead.id} value={lead.id}>
-                        {lead.nome} - {lead.localita} ({lead.camere} camera{lead.camere > 1 ? 'e' : ''})
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger>
+                      <SelectValue placeholder={searchTerm.trim() === '' ? 'Inizia a digitare per cercare lead...' : 'Seleziona una lead...'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Nessuna lead associata</SelectItem>
+                      {selectedLead && formData.leadId === selectedLead.id && (
+                        <SelectItem key={selectedLead.id} value={selectedLead.id.toString()}>
+                          {selectedLead.nome} - {selectedLead.localita} ({selectedLead.camere} camera{selectedLead.camere > 1 ? 'e' : ''})
+                        </SelectItem>
+                      )}
+                      {searchedLeads.map((lead) => (
+                        <SelectItem key={lead.id} value={lead.id.toString()}>
+                          {lead.nome} - {lead.localita} ({lead.camere} camera{lead.camere > 1 ? 'e' : ''})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   
                   {searchTerm.trim() === '' && !selectedLead && (
                     <div className="mt-2 p-2 text-sm text-gray-600 bg-gray-50 rounded">
@@ -289,93 +297,107 @@ function NewAppuntamentoForm() {
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Dettagli Appuntamento */}
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Dettagli Appuntamento</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="data" className="block text-sm font-medium text-gray-700 mb-1">
-                    Data e Ora *
-                  </label>
-                  <input
-                    type="datetime-local"
-                    id="data"
-                    name="data"
-                    required
-                    value={formData.data}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Dettagli Appuntamento
+                </CardTitle>
+                <CardDescription>
+                  Informazioni specifiche dell'appuntamento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="data" className="block text-sm font-medium text-gray-700 mb-2">
+                      Data e Ora *
+                    </label>
+                    <DateTimePicker
+                      value={formData.data}
+                      onChange={(date) => setFormData(prev => ({ ...prev, data: date }))}
+                      placeholder="Seleziona data e ora dell'appuntamento"
+                    />
+                  </div>
 
-                <div>
-                  <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-1">
-                    Tipo di Appuntamento *
-                  </label>
-                  <select
-                    id="tipo"
-                    name="tipo"
-                    required
-                    value={formData.tipo}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Seleziona tipo...</option>
-                    {tipiAppuntamento.map((tipo) => (
-                      <option key={tipo} value={tipo}>{tipo}</option>
-                    ))}
-                  </select>
-                </div>
+                  <div>
+                    <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-2">
+                      Tipo di Appuntamento *
+                    </label>
+                    <Select 
+                      value={formData.tipo} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, tipo: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleziona tipo..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tipiAppuntamento.map((tipo) => (
+                          <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="md:col-span-2">
-                  <label htmlFor="luogo" className="block text-sm font-medium text-gray-700 mb-1">
-                    Luogo
-                  </label>
-                  <input
-                    type="text"
-                    id="luogo"
-                    name="luogo"
-                    value={formData.luogo}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Es. Ufficio, Casa del cliente, Video chiamata, ecc."
-                  />
-                </div>
-              </div>
-            </div>
+                  <div className="md:col-span-2">
+                    <label htmlFor="luogo" className="block text-sm font-medium text-gray-700 mb-2">
+                      Luogo
+                    </label>
+                    <input
+                      type="text"
+                      id="luogo"
+                      name="luogo"
+                      value={formData.luogo}
+                      onChange={(e) => setFormData(prev => ({ ...prev, luogo: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Es. Ufficio, Casa del cliente, Video chiamata, ecc."
+                    />
+                  </div>
 
-            {/* Note */}
-            <div>
-              <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-1">
-                Note e Dettagli
-              </label>
-              <textarea
-                id="note"
-                name="note"
-                rows={4}
-                value={formData.note}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Aggiungi note specifiche per questo appuntamento, agenda, documenti da portare..."
-              />
-            </div>
+                  <div className="md:col-span-2">
+                    <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-2">
+                      Note e Dettagli
+                    </label>
+                    <Textarea
+                      id="note"
+                      value={formData.note}
+                      onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
+                      placeholder="Aggiungi note specifiche per questo appuntamento, agenda, documenti da portare..."
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Stato */}
-            <div>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="completato"
-                  checked={formData.completato}
-                  onChange={handleInputChange}
-                  className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Appuntamento già completato</span>
-              </label>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Stato Appuntamento
+                </CardTitle>
+                <CardDescription>
+                  Imposta lo stato iniziale dell'appuntamento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.completato}
+                    onChange={(e) => setFormData(prev => ({ ...prev, completato: e.target.checked }))}
+                    className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Appuntamento già completato</span>
+                </label>
+              </CardContent>
+            </Card>
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
@@ -400,19 +422,22 @@ function NewAppuntamentoForm() {
               </Button>
             </div>
           </form>
-        </div>
 
         {/* Tips */}
-        <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
-          <h3 className="font-medium text-green-900 mb-2">📅 Consigli per gli appuntamenti</h3>
-          <ul className="text-sm text-green-800 space-y-1">
-            <li>• Digita nel campo di ricerca per trovare la lead desiderata (ricerca in tempo reale)</li>
-            <li>• Conferma sempre data e ora con la lead prima di fissare l'appuntamento</li>
-            <li>• Specifica il tipo di incontro per preparare al meglio i materiali necessari</li>
-            <li>• Aggiungi note specifiche per ricordare dettagli importanti discussi</li>
-            <li>• Per appuntamenti importanti, considera di inviare un promemoria il giorno prima</li>
-          </ul>
-        </div>
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg">📅 Consigli per gli appuntamenti</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="text-sm text-gray-600 space-y-2">
+              <li>• Digita nel campo di ricerca per trovare la lead desiderata (ricerca in tempo reale)</li>
+              <li>• Conferma sempre data e ora con la lead prima di fissare l'appuntamento</li>
+              <li>• Specifica il tipo di incontro per preparare al meglio i materiali necessari</li>
+              <li>• Aggiungi note specifiche per ricordare dettagli importanti discussi</li>
+              <li>• Per appuntamenti importanti, considera di inviare un promemoria il giorno prima</li>
+            </ul>
+          </CardContent>
+        </Card>
       </main>
     </div>
   )
