@@ -545,28 +545,30 @@ export default function AppuntamentiPage() {
 
                           {/* Management Buttons */}
                           <div className="grid grid-cols-2 gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button 
-                              onClick={() => setSelectedAppForView(appuntamento)}
-                              className="btn-secondary group/btn"
-                              size="sm"
-                            >
-                              <Eye className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
-                              Dettagli
-                            </Button>
+                            <Link href={`/dashboard/appuntamenti/${appuntamento.id}`}>
+                              <Button 
+                                className="btn-secondary group/btn w-full"
+                                size="sm"
+                              >
+                                <Eye className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
+                                Dettagli
+                              </Button>
+                            </Link>
                             <Link href={`/dashboard/leads/${appuntamento.leadId}`}>
                               <Button className="btn-secondary group/btn w-full" size="sm">
                                 <MapPin className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
                                 Lead
                               </Button>
                             </Link>
-                            <Button 
-                              onClick={() => handleEditClick(appuntamento)}
-                              className="btn-secondary group/btn"
-                              size="sm"
-                            >
-                              <Edit className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
-                              Modifica
-                            </Button>
+                            <Link href={`/dashboard/appuntamenti/${appuntamento.id}`}>
+                              <Button 
+                                className="btn-secondary group/btn w-full"
+                                size="sm"
+                              >
+                                <Edit className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
+                                Modifica
+                              </Button>
+                            </Link>
                             <Button 
                               onClick={() => handleDeleteClick(appuntamento)}
                               className="btn-danger group/btn"

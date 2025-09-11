@@ -641,7 +641,7 @@ export default function LeadsPage() {
                       Dettagli
                     </Button>
                   </Link>
-                  <Link href={`/dashboard/leads/${lead.id}/edit`} className="col-span-1">
+                  <Link href={`/dashboard/leads/${lead.id}`} className="col-span-1">
                     <Button className="btn-secondary w-full group">
                       <Edit className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
                       Modifica

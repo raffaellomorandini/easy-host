@@ -243,11 +243,11 @@ export default function CalendarioPage() {
     const eventData = event.extendedProps?.data
     
     if (eventType === 'appuntamento') {
-      // Reindirizza alla pagina di modifica appuntamenti
-      window.location.href = `/dashboard/appuntamenti`
+      // Reindirizza alla pagina di dettaglio appuntamenti
+      window.location.href = `/dashboard/appuntamenti/${eventData.id}`
     } else if (eventType === 'task') {
-      // Reindirizza alla pagina di modifica task
-      window.location.href = `/dashboard/tasks`
+      // Reindirizza alla pagina di dettaglio task
+      window.location.href = `/dashboard/tasks/${eventData.id}`
     }
     setShowEventModal(false)
   }
