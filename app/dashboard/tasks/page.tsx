@@ -115,6 +115,17 @@ function TasksPageContent() {
     return () => clearTimeout(timeoutId)
   }, [leadSearchTerm])
 
+  // Gestisci apertura modal di modifica
+  useEffect(() => {
+    if (editingTask && editingTask.leadId) {
+      fetchSelectedLead(editingTask.leadId)
+    } else if (editingTask && !editingTask.leadId) {
+      setSelectedLead(null)
+      setLeadSearchTerm('')
+      setSearchedLeads([])
+    }
+  }, [editingTask])
+
   const fetchTasks = async () => {
     try {
       const response = await fetch('/api/tasks')
@@ -221,6 +232,57 @@ function TasksPageContent() {
       console.error('Error creating task:', error)
       toast.error('Errore durante la creazione del task')
     }
+  }
+
+  const updateTask = async (taskData: any) => {
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskData)
+      })
+
+      if (response.ok) {
+        fetchTasks()
+        toast.success('Task aggiornato con successo!')
+        setEditingTask(null)
+        // Reset lead states
+        setSelectedLead(null)
+        setLeadSearchTerm('')
+        setSearchedLeads([])
+      } else {
+        toast.error('Errore durante l\'aggiornamento del task')
+      }
+    } catch (error) {
+      console.error('Error updating task:', error)
+      toast.error('Errore durante l\'aggiornamento del task')
+    }
+  }
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingTask) return
+
+    const formData = new FormData(e.target as HTMLFormElement)
+    const dataScadenza = formData.get('dataScadenza') as string
+    
+    const taskData = {
+      id: editingTask.id,
+      titolo: (formData.get('titolo') as string).trim(),
+      descrizione: (formData.get('descrizione') as string).trim() || null,
+      tipo: formData.get('tipo') as string,
+      priorita: formData.get('priorita') as string,
+      stato: formData.get('stato') as string,
+      dataScadenza: dataScadenza ? new Date(dataScadenza).toISOString() : null,
+      leadId: selectedLead?.id || null
+    }
+
+    if (!taskData.titolo) {
+      toast.error('Il titolo è obbligatorio')
+      return
+    }
+
+    await updateTask(taskData)
   }
 
   const updateTaskStatus = async (taskId: number, newStato: string) => {
@@ -580,6 +642,225 @@ function TasksPageContent() {
                     type="button" 
                     onClick={() => {
                       setShowNewTaskForm(false)
+                      setSelectedLead(null)
+                      setLeadSearchTerm('')
+                      setSearchedLeads([])
+                    }}
+                    className="btn-secondary"
+                  >
+                    Annulla
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Edit Task Modal */}
+      {editingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Modifica Task</h2>
+                  <p className="text-sm text-gray-500 mt-1">Aggiorna i dettagli del task</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setEditingTask(null)
+                    setSelectedLead(null)
+                    setLeadSearchTerm('')
+                    setSearchedLeads([])
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Titolo *
+                  </label>
+                  <input
+                    type="text"
+                    name="titolo"
+                    required
+                    defaultValue={editingTask.titolo}
+                    className="form-input"
+                    placeholder="Inserisci il titolo del task"
+                  />
+                </div>
+
+                {/* Selezione Lead (Opzionale) */}
+                <div>
+                  <label htmlFor="editLeadSearch" className="block text-sm font-medium text-gray-700 mb-1">
+                    Associa a Lead (Opzionale)
+                  </label>
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <input
+                      type="text"
+                      id="editLeadSearch"
+                      placeholder="Cerca per nome, località, email o telefono..."
+                      value={leadSearchTerm}
+                      onChange={(e) => setLeadSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-10 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    {searching && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {selectedLead ? (
+                    <div className="p-3 bg-blue-50 rounded-lg text-sm border">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium text-blue-900">{selectedLead.nome}</div>
+                          <div className="text-blue-700">
+                            {selectedLead.localita} • {selectedLead.camere} camera{selectedLead.camere > 1 ? 'e' : ''}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedLead(null)
+                            setLeadSearchTerm('')
+                            setSearchedLeads([])
+                          }}
+                          className="text-blue-400 hover:text-blue-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {leadSearchTerm.trim() === '' && (
+                        <div className="p-2 text-sm text-gray-600 bg-gray-50 rounded">
+                          💡 Opzionale: digita per cercare una lead da associare al task
+                          {editingTask.leadNome && (
+                            <div className="mt-1 text-orange-600">
+                              ⚠️ Lead attuale: {editingTask.leadNome} (sarà rimossa se non selezioni nulla)
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {leadSearchTerm && !searching && searchedLeads.length === 0 && (
+                        <div className="p-2 text-sm text-gray-500 bg-gray-50 rounded">
+                          Nessuna lead trovata per "{leadSearchTerm}"
+                        </div>
+                      )}
+                      
+                      {searchedLeads.length > 0 && (
+                        <div className="border border-gray-200 rounded-md max-h-40 overflow-y-auto">
+                          {searchedLeads.map((lead) => (
+                            <button
+                              key={lead.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedLead(lead)
+                                setLeadSearchTerm('')
+                                setSearchedLeads([])
+                              }}
+                              className="w-full text-left p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                            >
+                              <div className="font-medium text-gray-900">{lead.nome}</div>
+                              <div className="text-sm text-gray-600">
+                                {lead.localita} • {lead.camere} camera{lead.camere > 1 ? 'e' : ''}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descrizione
+                  </label>
+                  <textarea
+                    name="descrizione"
+                    rows={3}
+                    defaultValue={editingTask.descrizione || ''}
+                    className="form-textarea"
+                    placeholder="Descrizione opzionale del task"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tipo *
+                    </label>
+                    <select name="tipo" required defaultValue={editingTask.tipo} className="form-select">
+                      <option value="">Seleziona tipo</option>
+                      <option value="prospetti_da_fare">Prospetti da fare</option>
+                      <option value="chiamate_da_fare">Chiamate da fare</option>
+                      <option value="task_importanti">Task importanti</option>
+                      <option value="task_generiche">Task generiche</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Priorità *
+                    </label>
+                    <select name="priorita" required defaultValue={editingTask.priorita} className="form-select">
+                      <option value="">Seleziona priorità</option>
+                      <option value="bassa">Bassa</option>
+                      <option value="media">Media</option>
+                      <option value="alta">Alta</option>
+                      <option value="urgente">Urgente</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Stato *
+                    </label>
+                    <select name="stato" required defaultValue={editingTask.stato} className="form-select">
+                      <option value="da_fare">Da fare</option>
+                      <option value="in_corso">In corso</option>
+                      <option value="completato">Completato</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Data di Scadenza
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="dataScadenza"
+                    defaultValue={editingTask.dataScadenza ? new Date(editingTask.dataScadenza).toISOString().slice(0, 16) : ''}
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button type="submit" className="btn-primary">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Aggiorna Task
+                  </Button>
+                  <Button 
+                    type="button" 
+                    onClick={() => {
+                      setEditingTask(null)
                       setSelectedLead(null)
                       setLeadSearchTerm('')
                       setSearchedLeads([])

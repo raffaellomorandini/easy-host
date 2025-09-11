@@ -52,6 +52,11 @@ export default function AppuntamentiPage() {
     appuntamento: null
   })
   const [deleting, setDeleting] = useState(false)
+  const [editModal, setEditModal] = useState<{ isOpen: boolean; appuntamento: Appuntamento | null }>({
+    isOpen: false,
+    appuntamento: null
+  })
+  const [updating, setUpdating] = useState(false)
 
   useEffect(() => {
     if (session) {
@@ -65,12 +70,16 @@ export default function AppuntamentiPage() {
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && deleteModal.isOpen) {
-        handleDeleteCancel()
+      if (e.key === 'Escape') {
+        if (deleteModal.isOpen) {
+          handleDeleteCancel()
+        } else if (editModal.isOpen) {
+          handleEditCancel()
+        }
       }
     }
 
-    if (deleteModal.isOpen) {
+    if (deleteModal.isOpen || editModal.isOpen) {
       document.addEventListener('keydown', handleEscape)
       document.body.style.overflow = 'hidden' // Previene lo scroll del body
     } else {
@@ -81,7 +90,7 @@ export default function AppuntamentiPage() {
       document.removeEventListener('keydown', handleEscape)
       document.body.style.overflow = 'unset'
     }
-  }, [deleteModal.isOpen])
+  }, [deleteModal.isOpen, editModal.isOpen])
 
   const fetchAppuntamenti = async () => {
     try {
@@ -140,6 +149,52 @@ export default function AppuntamentiPage() {
 
   const handleDeleteClick = (appuntamento: Appuntamento) => {
     setDeleteModal({ isOpen: true, appuntamento })
+  }
+
+  const handleEditClick = (appuntamento: Appuntamento) => {
+    setEditModal({ isOpen: true, appuntamento })
+  }
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editModal.appuntamento) return
+
+    const formData = new FormData(e.target as HTMLFormElement)
+    const updatedData = {
+      id: editModal.appuntamento.id,
+      data: new Date(formData.get('data') as string).toISOString(),
+      tipo: formData.get('tipo') as string,
+      luogo: formData.get('luogo') as string || null,
+      note: formData.get('note') as string || null,
+      completato: Boolean(formData.get('completato'))
+    }
+
+    setUpdating(true)
+    try {
+      const response = await fetch('/api/appuntamenti', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      })
+
+      if (response.ok) {
+        fetchAppuntamenti()
+        toast.success('Appuntamento aggiornato con successo!')
+        setEditModal({ isOpen: false, appuntamento: null })
+      } else {
+        const errorData = await response.json()
+        toast.error(`Errore durante l'aggiornamento: ${errorData.error || 'Errore sconosciuto'}`)
+      }
+    } catch (error) {
+      console.error('Error updating appuntamento:', error)
+      toast.error('Errore durante l\'aggiornamento')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const handleEditCancel = () => {
+    setEditModal({ isOpen: false, appuntamento: null })
   }
 
   const handleDeleteConfirm = async () => {
@@ -508,7 +563,10 @@ export default function AppuntamentiPage() {
                             </Button>
                           </Link>
 
-                          <Button className="btn-secondary group">
+                          <Button 
+                            onClick={() => handleEditClick(appuntamento)}
+                            className="btn-secondary group"
+                          >
                             <Edit className="h-4 w-4 mr-1 group-hover:scale-110 transition-transform" />
                             Modifica
                           </Button>
@@ -570,6 +628,144 @@ export default function AppuntamentiPage() {
               </div>
             </div>
           </motion.div>
+        )}
+
+        {/* Edit Modal */}
+        {editModal.isOpen && editModal.appuntamento && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={handleEditCancel}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex items-center mb-6">
+                  <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+                    <Edit className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Modifica Appuntamento
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {editModal.appuntamento.leadNome} - {editModal.appuntamento.leadLocalita}
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleEditSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="edit-data" className="block text-sm font-medium text-gray-700 mb-1">
+                        Data e Ora *
+                      </label>
+                      <input
+                        type="datetime-local"
+                        id="edit-data"
+                        name="data"
+                        required
+                        defaultValue={new Date(editModal.appuntamento.data).toISOString().slice(0, 16)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-tipo" className="block text-sm font-medium text-gray-700 mb-1">
+                        Tipo di Appuntamento *
+                      </label>
+                      <select
+                        id="edit-tipo"
+                        name="tipo"
+                        required
+                        defaultValue={editModal.appuntamento.tipo}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Seleziona tipo...</option>
+                        <option value="Incontro conoscitivo">Incontro conoscitivo</option>
+                        <option value="Incontro conoscitivo + sopralluogo">Incontro conoscitivo + sopralluogo</option>
+                        <option value="Incontro di piacere">Incontro di piacere</option>
+                        <option value="Firma contratto">Firma contratto</option>
+                        <option value="Sistemazione immobile">Sistemazione immobile</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="edit-luogo" className="block text-sm font-medium text-gray-700 mb-1">
+                      Luogo
+                    </label>
+                    <input
+                      type="text"
+                      id="edit-luogo"
+                      name="luogo"
+                      defaultValue={editModal.appuntamento.luogo || ''}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Es. Ufficio, Casa del cliente, Video chiamata, ecc."
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="edit-note" className="block text-sm font-medium text-gray-700 mb-1">
+                      Note e Dettagli
+                    </label>
+                    <textarea
+                      id="edit-note"
+                      name="note"
+                      rows={4}
+                      defaultValue={editModal.appuntamento.note || ''}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Aggiungi note specifiche per questo appuntamento..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        name="completato"
+                        defaultChecked={editModal.appuntamento.completato}
+                        className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Appuntamento completato</span>
+                    </label>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+                    <Button
+                      type="button"
+                      onClick={handleEditCancel}
+                      variant="outline"
+                      disabled={updating}
+                    >
+                      Annulla
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={updating}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {updating ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Aggiornando...
+                        </>
+                      ) : (
+                        <>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Aggiorna Appuntamento
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </div>
         )}
 
         {/* Delete Confirmation Modal */}
