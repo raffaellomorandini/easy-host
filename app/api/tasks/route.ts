@@ -122,7 +122,6 @@ export async function PUT(request: NextRequest) {
     const updatedTask = await db
       .update(tasks)
       .set(updateData)
-      .where(and(eq(tasks.id, id), eq(tasks.userId, session.user.id)))
       .returning();
 
     if (updatedTask.length === 0) {
@@ -153,7 +152,6 @@ export async function DELETE(request: NextRequest) {
 
     const deletedTask = await db
       .delete(tasks)
-      .where(and(eq(tasks.id, id), eq(tasks.userId, session.user.id)))
       .returning();
 
     if (deletedTask.length === 0) {
