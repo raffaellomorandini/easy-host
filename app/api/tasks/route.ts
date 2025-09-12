@@ -60,12 +60,13 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(tasks.userId, session.user.id)];
     
     if (search) {
-      conditions.push(
-        or(
-          ilike(tasks.titolo, `%${search}%`),
-          ilike(tasks.descrizione, `%${search}%`)
-        )
+      const searchCondition = or(
+        ilike(tasks.titolo, `%${search}%`),
+        ilike(tasks.descrizione, `%${search}%`)
       );
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
     }
 
     if (stato && stato !== 'all') {
