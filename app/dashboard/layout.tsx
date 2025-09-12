@@ -63,18 +63,6 @@ const sidebarItems: SidebarItem[] = [
   }
 ]
 
-const quickActions: SidebarItem[] = [
-  {
-    name: 'Nuova Lead',
-    href: '/dashboard/leads/new',
-    icon: Plus
-  },
-  {
-    name: 'Nuovo Appuntamento',
-    href: '/dashboard/appuntamenti/new',
-    icon: Calendar
-  }
-]
 
 export default function DashboardLayout({
   children,
@@ -169,24 +157,6 @@ export default function DashboardLayout({
               })}
             </div>
 
-            {/* Quick Actions */}
-            <div className="pt-6">
-              <p className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Azioni Rapide
-              </p>
-              <div className="space-y-1">
-                {quickActions.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all duration-200"
-                  >
-                    <item.icon className="h-4 w-4 text-gray-400" />
-                    <span>{item.name}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
           </nav>
 
           {/* Footer actions */}
