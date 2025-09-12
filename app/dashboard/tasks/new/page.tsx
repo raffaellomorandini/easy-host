@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -37,7 +37,7 @@ interface Lead {
   status: string
 }
 
-export default function NewTaskPage() {
+function NewTaskForm() {
   const { data: session } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -432,7 +432,7 @@ export default function NewTaskPage() {
 
                 {leadSearchTerm && !searching && searchedLeads.length === 0 && (
                   <div className="mt-2 p-3 text-sm text-gray-500 bg-gray-50 rounded-lg">
-                    Nessuna lead trovata per "{leadSearchTerm}"
+                    Nessuna lead trovata per &quot;{leadSearchTerm}&quot;
                   </div>
                 )}
 
@@ -533,8 +533,8 @@ export default function NewTaskPage() {
           </CardHeader>
           <CardContent>
             <ul className="text-sm text-gray-600 space-y-2">
-              <li>• <strong>Titolo chiaro:</strong> Usa titoli specifici e azionabili (es. "Chiamare Mario Rossi per conferma appuntamento")</li>
-              <li>• <strong>Priorità:</strong> Usa "Urgente" solo per task che richiedono azione immediata</li>
+              <li>• <strong>Titolo chiaro:</strong> Usa titoli specifici e azionabili (es. &quot;Chiamare Mario Rossi per conferma appuntamento&quot;)</li>
+              <li>• <strong>Priorità:</strong> Usa &quot;Urgente&quot; solo per task che richiedono azione immediata</li>
               <li>• <strong>Scadenza:</strong> Imposta una data realistica per completare il task</li>
               <li>• <strong>Lead associata:</strong> Collega il task a una lead per un migliore tracciamento del customer journey</li>
               <li>• <strong>Descrizione:</strong> Aggiungi dettagli utili per ricordare il contesto quando riprenderai il task</li>
@@ -543,5 +543,17 @@ export default function NewTaskPage() {
         </Card>
       </main>
     </div>
+  )
+}
+
+export default function NewTaskPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Caricamento...</div>
+      </div>
+    }>
+      <NewTaskForm />
+    </Suspense>
   )
 }

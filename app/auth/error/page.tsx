@@ -45,7 +45,7 @@ export default function AuthError() {
             </h2>
             <p className="text-lg text-gray-600 max-w-md mx-auto">
               La tua email non è autorizzata ad accedere a questo sistema. 
-              Contatta l'amministratore per richiedere l'accesso.
+              Contatta l&apos;amministratore per richiedere l&apos;accesso.
             </p>
           </div>
 
@@ -58,8 +58,8 @@ export default function AuthError() {
           >
             <h3 className="font-semibold text-red-900 mb-2">Cosa fare?</h3>
             <ul className="text-sm text-red-800 space-y-1 text-left">
-              <li>• Verifica di aver effettuato l'accesso con l'email corretta</li>
-              <li>• Contatta l'amministratore del sistema</li>
+              <li>• Verifica di aver effettuato l&apos;accesso con l&apos;email corretta</li>
+              <li>• Contatta l&apos;amministratore del sistema</li>
               <li>• Riprova con un account autorizzato</li>
             </ul>
           </motion.div>

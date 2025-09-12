@@ -154,11 +154,11 @@ export default function AppuntamentoDetailPage() {
         setIsEditing(false)
         fetchAppuntamento()
       } else {
-        toast.error('Errore durante l\'aggiornamento')
+        toast.error('Errore durante l&apos;aggiornamento')
       }
     } catch (error) {
       console.error('Error updating appuntamento:', error)
-      toast.error('Errore durante l\'aggiornamento')
+      toast.error('Errore durante l&apos;aggiornamento')
     } finally {
       setSaving(false)
     }
@@ -215,7 +215,7 @@ export default function AppuntamentoDetailPage() {
         <Card className="max-w-md">
           <CardHeader className="text-center">
             <CardTitle>Appuntamento non trovato</CardTitle>
-            <CardDescription>L'appuntamento richiesto non esiste o è stato eliminato</CardDescription>
+            <CardDescription>L&apos;appuntamento richiesto non esiste o è stato eliminato</CardDescription>
           </CardHeader>
           <CardContent className="text-center">
             <Link href="/dashboard/appuntamenti">
@@ -526,7 +526,7 @@ export default function AppuntamentoDetailPage() {
                           <div>
                             <p className="font-medium text-gray-900">Appuntamento scaduto</p>
                             <p className="text-sm text-gray-500">
-                              L'appuntamento è passato ma non è stato marcato come completato
+                              L&apos;appuntamento è passato ma non è stato marcato come completato
                             </p>
                           </div>
                         </div>

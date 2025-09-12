@@ -350,14 +350,14 @@ export default function NewLeadPage() {
         {/* Tips */}
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle className="text-lg">💡 Consigli per l'inserimento</CardTitle>
+            <CardTitle className="text-lg">💡 Consigli per l&apos;inserimento</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="text-sm text-gray-600 space-y-2">
               <li>• Inserisci sempre il nome completo per una migliore identificazione</li>
               <li>• La località dovrebbe includere città e eventualmente zona/quartiere</li>
-              <li>• Nelle note puoi inserire dettagli su esigenze specifiche, budget, tempistiche</li>
-              <li>• Marca come "contattato" se hai già avuto un primo contatto</li>
+            <li>• Nelle note puoi inserire dettagli su esigenze specifiche, budget, tempistiche</li>
+            <li>• Marca come &quot;contattato&quot; se hai già avuto un primo contatto</li>
             </ul>
           </CardContent>
         </Card>

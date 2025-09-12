@@ -32,7 +32,7 @@ export default function SignIn() {
               <span className="text-gradient"> clienti</span>
             </h2>
             <p className="text-xl text-gray-600 mb-8">
-              Il CRM completo per strutture ricettive. Gestisci leads, appuntamenti e task in un'unica piattaforma moderna.
+              Il CRM completo per strutture ricettive. Gestisci leads, appuntamenti e task in un&apos;unica piattaforma moderna.
             </p>
           </div>
 
@@ -103,7 +103,7 @@ export default function SignIn() {
 
             <div className="mt-6 text-center">
               <p className="text-xs text-gray-500">
-                Effettuando l'accesso accetti i nostri{" "}
+                Effettuando l&apos;accesso accetti i nostri{" "}
                 <a href="#" className="text-blue-600 hover:text-blue-800">
                   Termini di Servizio
                 </a>{" "}

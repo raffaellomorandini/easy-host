@@ -104,8 +104,8 @@ function NewAppuntamentoForm() {
       return
     }
 
-    if (!formData.data) {
-      alert('Inserisci una data per l\'appuntamento')
+                    if (!formData.data) {
+      alert('Inserisci una data per l&apos;appuntamento')
       return
     }
 
@@ -194,7 +194,7 @@ function NewAppuntamentoForm() {
                   Lead di Riferimento
                 </CardTitle>
                 <CardDescription>
-                  Seleziona la lead per cui creare l'appuntamento
+                  Seleziona la lead per cui creare l&apos;appuntamento
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -264,7 +264,7 @@ function NewAppuntamentoForm() {
                   
                   {searchTerm && !searching && searchedLeads.length === 0 && (
                     <div className="mt-2 p-2 text-sm text-gray-500 bg-gray-50 rounded">
-                      Nessuna lead trovata per "{searchTerm}"
+                      Nessuna lead trovata per &quot;{searchTerm}&quot;
                     </div>
                   )}
                   
@@ -309,7 +309,7 @@ function NewAppuntamentoForm() {
                   Dettagli Appuntamento
                 </CardTitle>
                 <CardDescription>
-                  Informazioni specifiche dell'appuntamento
+                  Informazioni specifiche dell&apos;appuntamento
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -321,7 +321,7 @@ function NewAppuntamentoForm() {
                     <DateTimePicker
                       value={formData.data}
                       onChange={(date) => setFormData(prev => ({ ...prev, data: date }))}
-                      placeholder="Seleziona data e ora dell'appuntamento"
+                      placeholder="Seleziona data e ora dell&apos;appuntamento"
                     />
                   </div>
 
@@ -383,7 +383,7 @@ function NewAppuntamentoForm() {
                   Stato Appuntamento
                 </CardTitle>
                 <CardDescription>
-                  Imposta lo stato iniziale dell'appuntamento
+                  Imposta lo stato iniziale dell&apos;appuntamento
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -431,7 +431,7 @@ function NewAppuntamentoForm() {
           <CardContent>
             <ul className="text-sm text-gray-600 space-y-2">
               <li>• Digita nel campo di ricerca per trovare la lead desiderata (ricerca in tempo reale)</li>
-              <li>• Conferma sempre data e ora con la lead prima di fissare l'appuntamento</li>
+              <li>• Conferma sempre data e ora con la lead prima di fissare l&apos;appuntamento</li>
               <li>• Specifica il tipo di incontro per preparare al meglio i materiali necessari</li>
               <li>• Aggiungi note specifiche per ricordare dettagli importanti discussi</li>
               <li>• Per appuntamenti importanti, considera di inviare un promemoria il giorno prima</li>

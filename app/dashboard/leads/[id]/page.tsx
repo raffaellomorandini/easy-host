@@ -806,19 +806,19 @@ export default function LeadDetailPage() {
                       onClick={() => updateLeadStatus('foto')}
                       className="w-full bg-purple-600 hover:bg-purple-700"
                     >
-                      📸 Sposta a "Foto"
+                      📸 Sposta a &quot;Foto&quot;
                     </Button>
                     <Button 
                       onClick={() => updateLeadStatus('appuntamento')}
                       className="w-full bg-blue-600 hover:bg-blue-700"
                     >
-                      📅 Sposta a "Appuntamento"
+                      📅 Sposta a &quot;Appuntamento&quot;
                     </Button>
                     <Button 
                       onClick={() => updateLeadStatus('ghost')}
                       className="w-full bg-red-600 hover:bg-red-700"
                     >
-                      👻 Marca come "Ghost"
+                      👻 Marca come &quot;Ghost&quot;
                     </Button>
                   </>
                 )}
@@ -829,14 +829,14 @@ export default function LeadDetailPage() {
                     onClick={() => updateLeadStatus('cliente_attesa')}
                     className="w-full bg-yellow-600 hover:bg-yellow-700"
                   >
-                      → Sposta in "Cliente in Attesa"
+                      → Sposta in &quot;Cliente in Attesa&quot;
                     </Button>
                     <Button 
                       onClick={() => updateLeadStatus('ricontattare')}
                       className="w-full bg-orange-600 hover:bg-orange-700"
                       disabled={lead.status === 'ricontattare'}
                     >
-                      📞 Marca "Da Ricontattare"
+                      📞 Marca &quot;Da Ricontattare&quot;
                     </Button>
                   </>
                 )}
@@ -846,7 +846,7 @@ export default function LeadDetailPage() {
                     onClick={() => updateLeadStatus('ricontattare')}
                     className="w-full bg-orange-600 hover:bg-orange-700"
                   >
-                    📞 Sposta a "Ricontattare"
+                    📞 Sposta a &quot;Ricontattare&quot;
                   </Button>
                 )}
                 
@@ -865,7 +865,7 @@ export default function LeadDetailPage() {
                     variant="outline"
                     className="w-full"
                   >
-                    ← Riporta in "Attesa"
+                    ← Riporta in &quot;Attesa&quot;
                   </Button>
                 )}
 
