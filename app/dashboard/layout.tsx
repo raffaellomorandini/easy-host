@@ -92,7 +92,7 @@ export default function DashboardLayout({
 
   return (
     <FormStateProvider>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex">
+      <div className="h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex overflow-hidden">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
@@ -210,9 +210,9 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full">
         {/* Top header */}
-        <header className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4">
+        <header className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
@@ -250,7 +250,7 @@ export default function DashboardLayout({
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-6 overflow-auto">
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto min-h-0">
           {children}
         </main>
       </div>
