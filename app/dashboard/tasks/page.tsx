@@ -243,13 +243,7 @@ function TasksPageContent() {
   const taskDaFare = tasks.filter(t => t.stato === 'da_fare').length
   const tasksUrgenti = tasks.filter(t => t.priorita === 'urgente' && t.stato !== 'completato').length
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-lg">Caricamento tasks...</div>
-      </div>
-    )
-  }
+  // Rimosso il loading generale - ora mostriamo sempre il layout
 
   return (
     <div>
@@ -258,7 +252,14 @@ function TasksPageContent() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Task Manager</h1>
           <p className="text-gray-600 mt-1">
-            {tasks.length} task totali • {taskDaFare} da fare • {taskInCorso} in corso • {taskCompletati} completati
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span>Caricamento statistiche...</span>
+              </div>
+            ) : (
+              `${tasks.length} task totali • ${taskDaFare} da fare • ${taskInCorso} in corso • ${taskCompletati} completati`
+            )}
           </p>
         </div>
         <div className="flex gap-3">
@@ -485,7 +486,43 @@ function TasksPageContent() {
 
       {/* Tasks Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {tasks.map((task, index) => {
+        {loading ? (
+          // Skeleton Loading Cards
+          Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="card card-hover animate-pulse">
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-gray-300"></div>
+                    <div>
+                      <div className="h-5 bg-gray-300 rounded w-40 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    </div>
+                  </div>
+                  <div className="h-6 w-6 bg-gray-200 rounded"></div>
+                </div>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+                    <div>
+                      <div className="h-4 bg-gray-300 rounded w-20 mb-1"></div>
+                      <div className="h-3 bg-gray-200 rounded w-16"></div>
+                    </div>
+                  </div>
+                  <div className="h-16 bg-gray-100 rounded-lg"></div>
+                </div>
+                <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                  <div className="h-6 bg-gray-200 rounded w-20"></div>
+                  <div className="flex gap-2">
+                    <div className="h-8 bg-gray-200 rounded w-16"></div>
+                    <div className="h-8 bg-gray-200 rounded w-16"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          tasks.map((task, index) => {
           const PriorityIcon = getPriorityIcon(task.priorita)
           const TypeIcon = getTypeIcon(task.tipo)
           const isOverdue = task.dataScadenza && new Date(task.dataScadenza) < new Date() && task.stato !== 'completato'
@@ -646,7 +683,8 @@ function TasksPageContent() {
               </div>
             </motion.div>
           )
-        })}
+        })
+        )}
         </div>
 
         {/* Pagination */}

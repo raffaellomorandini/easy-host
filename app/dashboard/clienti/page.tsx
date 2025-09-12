@@ -143,13 +143,7 @@ export default function ClientiPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-lg">Caricamento clienti...</div>
-      </div>
-    )
-  }
+  // Rimosso il loading generale - ora mostriamo sempre il layout
 
   return (
     <div>
@@ -158,7 +152,14 @@ export default function ClientiPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestione Clienti</h1>
           <p className="text-gray-600 mt-1">
-            {clienti.length} clienti totali • {clienti.filter(c => c.status === 'cliente_attesa').length} in attesa • {clienti.filter(c => c.status === 'cliente_confermato').length} confermati
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span>Caricamento statistiche...</span>
+              </div>
+            ) : (
+              `${clienti.length} clienti totali • ${clienti.filter(c => c.status === 'cliente_attesa').length} in attesa • ${clienti.filter(c => c.status === 'cliente_confermato').length} confermati`
+            )}
           </p>
         </div>
         <div className="flex gap-3">
@@ -287,7 +288,48 @@ export default function ClientiPage() {
 
       {/* Clienti Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredClienti.map((cliente, index) => {
+        {loading ? (
+          // Skeleton Loading Cards
+          Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="card card-hover animate-pulse">
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className="h-16 w-16 rounded-full bg-gray-300"></div>
+                    <div>
+                      <div className="h-6 bg-gray-300 rounded w-48 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    </div>
+                  </div>
+                  <div className="h-6 w-16 bg-gray-200 rounded-full"></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+                    <div>
+                      <div className="h-4 bg-gray-300 rounded w-20 mb-1"></div>
+                      <div className="h-3 bg-gray-200 rounded w-16"></div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+                    <div>
+                      <div className="h-4 bg-gray-300 rounded w-24 mb-1"></div>
+                      <div className="h-3 bg-gray-200 rounded w-20"></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-4 border-t border-gray-100">
+                  <div className="h-8 bg-gray-200 rounded flex-1"></div>
+                  <div className="h-8 bg-gray-200 rounded flex-1"></div>
+                  <div className="h-8 bg-gray-200 rounded flex-1"></div>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          filteredClienti.map((cliente, index) => {
           const clienteAppuntamenti = getClienteAppuntamenti(cliente.id)
           const prossimiAppuntamenti = clienteAppuntamenti.filter(a => 
             !a.completato && new Date(a.data) >= new Date()
@@ -434,7 +476,8 @@ export default function ClientiPage() {
               </div>
             </motion.div>
           )
-        })}
+        })
+        )}
       </div>
 
       {/* Empty State */}

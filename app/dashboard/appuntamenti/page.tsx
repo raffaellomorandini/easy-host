@@ -266,13 +266,7 @@ export default function AppuntamentiPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-lg">Caricamento appuntamenti...</div>
-      </div>
-    )
-  }
+  // Rimosso il loading generale - ora mostriamo sempre il layout
 
   return (
     <div>
@@ -281,7 +275,14 @@ export default function AppuntamentiPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestione Appuntamenti</h1>
           <p className="text-gray-600 mt-1">
-            {pagination.totalCount} appuntamenti totali • Pagina {pagination.page} di {pagination.totalPages}
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span>Caricamento statistiche...</span>
+              </div>
+            ) : (
+              `${pagination.totalCount} appuntamenti totali • Pagina ${pagination.page} di ${pagination.totalPages}`
+            )}
           </p>
         </div>
         <div className="flex gap-3">
@@ -436,7 +437,58 @@ export default function AppuntamentiPage() {
 
         {/* Appuntamenti List */}
         <div className="space-y-4">
-          {appuntamenti.map((appuntamento, index) => {
+          {loading ? (
+            // Skeleton Loading Cards
+            Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="card card-hover animate-pulse">
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-full bg-gray-300"></div>
+                      <div>
+                        <div className="h-5 bg-gray-300 rounded w-48 mb-2"></div>
+                        <div className="h-4 bg-gray-200 rounded w-24"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+                      <div>
+                        <div className="h-4 bg-gray-300 rounded w-20 mb-1"></div>
+                        <div className="h-3 bg-gray-200 rounded w-16"></div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+                      <div>
+                        <div className="h-4 bg-gray-300 rounded w-16 mb-1"></div>
+                        <div className="h-3 bg-gray-200 rounded w-20"></div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+                      <div>
+                        <div className="h-4 bg-gray-300 rounded w-18 mb-1"></div>
+                        <div className="h-3 bg-gray-200 rounded w-24"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="h-5 bg-gray-200 rounded w-32"></div>
+                    <div className="space-y-2">
+                      <div className="h-8 bg-gray-200 rounded w-36"></div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="h-8 bg-gray-200 rounded"></div>
+                        <div className="h-8 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            appuntamenti.map((appuntamento, index) => {
             const isOverdue = !appuntamento.completato && new Date(appuntamento.data) < new Date()
             const isUpcoming = !appuntamento.completato && new Date(appuntamento.data) >= new Date()
             
@@ -623,7 +675,8 @@ export default function AppuntamentiPage() {
                 </div>
               </motion.div>
             )
-          })}
+          })
+        )}
         </div>
 
         {/* Pagination */}

@@ -244,13 +244,7 @@ export default function LeadsPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-lg">Caricamento leads...</div>
-      </div>
-    )
-  }
+  // Rimosso il loading generale - ora mostriamo sempre il layout
 
   return (
     <div>
@@ -259,7 +253,14 @@ export default function LeadsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestione Leads</h1>
           <p className="text-gray-600 mt-1">
-            {allLeads.length} leads totali • {allLeads.filter(l => l.status === 'lead').length} nuove • {allLeads.filter(l => l.status === 'foto').length} foto • {allLeads.filter(l => l.status === 'appuntamento').length} appuntamento • {allLeads.filter(l => l.status === 'cliente_confermato').length} confermati
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span>Caricamento statistiche...</span>
+              </div>
+            ) : (
+              `${allLeads.length} leads totali • ${allLeads.filter(l => l.status === 'lead').length} nuove • ${allLeads.filter(l => l.status === 'foto').length} foto • ${allLeads.filter(l => l.status === 'appuntamento').length} appuntamento • ${allLeads.filter(l => l.status === 'cliente_confermato').length} confermati`
+            )}
           </p>
         </div>
         <Link href="/dashboard/leads/new">
@@ -397,7 +398,47 @@ export default function LeadsPage() {
 
       {/* Leads Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {leads.map((lead, index) => (
+        {loading ? (
+          // Skeleton Loading Cards
+          Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="card card-hover animate-pulse">
+              <div className="p-6 pb-4">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-gray-300"></div>
+                    <div>
+                      <div className="h-5 bg-gray-300 rounded w-32 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-20"></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+                    <div>
+                      <div className="h-4 bg-gray-300 rounded w-24 mb-1"></div>
+                      <div className="h-3 bg-gray-200 rounded w-16"></div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="h-8 w-16 bg-gray-200 rounded-lg"></div>
+                    <div className="h-8 w-16 bg-gray-200 rounded-lg"></div>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-4 bg-gray-50 border-t">
+                <div className="h-6 bg-gray-200 rounded mb-3"></div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          leads.map((lead, index) => (
             <div 
               key={lead.id}
               className="card card-hover group cursor-pointer overflow-hidden"
@@ -627,7 +668,8 @@ export default function LeadsPage() {
                 </div>
               </div>
             </div>
-          ))}
+          ))
+        )}
         </div>
 
       {/* Pagination */}
