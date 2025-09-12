@@ -274,16 +274,16 @@ export default function AppuntamentiPage() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestione Appuntamenti</h1>
-          <p className="text-gray-600 mt-1">
+          <div className="text-gray-600 mt-1">
             {loading ? (
               <div className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                 <span>Caricamento statistiche...</span>
               </div>
             ) : (
-              `${pagination.totalCount} appuntamenti totali • Pagina ${pagination.page} di ${pagination.totalPages}`
+              <span>{pagination.totalCount} appuntamenti totali • Pagina {pagination.page} di {pagination.totalPages}</span>
             )}
-          </p>
+          </div>
         </div>
         <div className="flex gap-3">
           <Link href="/dashboard/calendario">

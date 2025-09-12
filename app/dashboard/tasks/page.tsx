@@ -251,16 +251,16 @@ function TasksPageContent() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Task Manager</h1>
-          <p className="text-gray-600 mt-1">
+          <div className="text-gray-600 mt-1">
             {loading ? (
               <div className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                 <span>Caricamento statistiche...</span>
               </div>
             ) : (
-              `${tasks.length} task totali • ${taskDaFare} da fare • ${taskInCorso} in corso • ${taskCompletati} completati`
+              <span>{tasks.length} task totali • {taskDaFare} da fare • {taskInCorso} in corso • {taskCompletati} completati</span>
             )}
-          </p>
+          </div>
         </div>
         <div className="flex gap-3">
           <Link href="/dashboard/calendario">

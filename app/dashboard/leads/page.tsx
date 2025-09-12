@@ -252,16 +252,16 @@ export default function LeadsPage() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestione Leads</h1>
-          <p className="text-gray-600 mt-1">
+          <div className="text-gray-600 mt-1">
             {loading ? (
               <div className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                 <span>Caricamento statistiche...</span>
               </div>
             ) : (
-              `${allLeads.length} leads totali • ${allLeads.filter(l => l.status === 'lead').length} nuove • ${allLeads.filter(l => l.status === 'foto').length} foto • ${allLeads.filter(l => l.status === 'appuntamento').length} appuntamento • ${allLeads.filter(l => l.status === 'cliente_confermato').length} confermati`
+              <span>{allLeads.length} leads totali • {allLeads.filter(l => l.status === 'lead').length} nuove • ${allLeads.filter(l => l.status === 'foto').length} foto • ${allLeads.filter(l => l.status === 'appuntamento').length} appuntamento • ${allLeads.filter(l => l.status === 'cliente_confermato').length} confermati</span>
             )}
-          </p>
+          </div>
         </div>
         <Link href="/dashboard/leads/new">
           <Button className="btn-primary">
