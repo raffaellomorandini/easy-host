@@ -108,10 +108,10 @@ export default function DashboardPage() {
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch('/api/tasks')
+      const response = await fetch('/api/tasks?limit=1000')
       if (response.ok) {
         const data = await response.json()
-        setTasks(data)
+        setTasks(data.tasks || data) // Handle both old and new API response
       }
     } catch (error) {
       console.error('Error fetching tasks:', error)
@@ -120,10 +120,10 @@ export default function DashboardPage() {
 
   const fetchAppuntamenti = async () => {
     try {
-      const response = await fetch('/api/appuntamenti')
+      const response = await fetch('/api/appuntamenti?limit=1000')
       if (response.ok) {
         const data = await response.json()
-        setAppuntamenti(data)
+        setAppuntamenti(data.appuntamenti || data) // Handle both old and new API response
       }
     } catch (error) {
       console.error('Error fetching appuntamenti:', error)

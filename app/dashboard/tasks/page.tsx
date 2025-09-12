@@ -30,6 +30,15 @@ import {
   Filter,
   X
 } from 'lucide-react'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 
 interface Task {
   id: number
@@ -50,35 +59,63 @@ interface Task {
   leadStatus?: string
 }
 
+interface PaginationInfo {
+  page: number
+  limit: number
+  totalCount: number
+  hasMore: boolean
+  totalPages: number
+}
+
 function TasksPageContent() {
   const { data: session } = useSession()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 20,
+    totalCount: 0,
+    hasMore: true,
+    totalPages: 0
+  })
   const [selectedTaskForView, setSelectedTaskForView] = useState<Task | null>(null)
   const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [filters, setFilters] = useState({
     stato: 'all' as 'all' | 'da_fare' | 'in_corso' | 'completato',
     priorita: 'all' as 'all' | 'bassa' | 'media' | 'alta' | 'urgente',
     tipo: 'all' as 'all' | 'prospetti_da_fare' | 'chiamate_da_fare' | 'task_importanti' | 'task_generiche'
   })
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
 
   useEffect(() => {
     if (session) {
       fetchTasks()
     }
-  }, [session])
+  }, [session, pagination.page, filters.stato, filters.priorita, filters.tipo, search])
 
   useEffect(() => {
-    filterTasks()
-  }, [tasks, filters, search])
+    // Reset alla pagina 1 quando cambiano i filtri
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }, [filters.stato, filters.priorita, filters.tipo, search])
 
   const fetchTasks = async () => {
+    setLoading(true)
+
     try {
-      const response = await fetch('/api/tasks')
+      const params = new URLSearchParams({
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
+        ...(search && { search }),
+        ...(filters.stato !== 'all' && { stato: filters.stato }),
+        ...(filters.priorita !== 'all' && { priorita: filters.priorita }),
+        ...(filters.tipo !== 'all' && { tipo: filters.tipo })
+      })
+
+      const response = await fetch(`/api/tasks?${params}`)
       if (response.ok) {
         const data = await response.json()
-        setTasks(data)
+        setTasks(data.tasks)
+        setPagination(data.pagination)
       }
     } catch (error) {
       console.error('Error fetching tasks:', error)
@@ -87,49 +124,12 @@ function TasksPageContent() {
     }
   }
 
-  const filterTasks = () => {
-    let filtered = tasks
+  const handleSearch = () => {
+    setSearch(searchInput)
+  }
 
-    if (filters.stato !== 'all') {
-      filtered = filtered.filter(task => task.stato === filters.stato)
-    }
-
-    if (filters.priorita !== 'all') {
-      filtered = filtered.filter(task => task.priorita === filters.priorita)
-    }
-
-    if (filters.tipo !== 'all') {
-      filtered = filtered.filter(task => task.tipo === filters.tipo)
-    }
-
-    if (search) {
-      filtered = filtered.filter(task => 
-        task.titolo.toLowerCase().includes(search.toLowerCase()) ||
-        task.descrizione?.toLowerCase().includes(search.toLowerCase()) ||
-        task.leadNome?.toLowerCase().includes(search.toLowerCase())
-      )
-    }
-
-    // Ordina: prima da_fare urgenti, poi per data di scadenza
-    filtered.sort((a, b) => {
-      if (a.stato === 'completato' && b.stato !== 'completato') return 1
-      if (a.stato !== 'completato' && b.stato === 'completato') return -1
-      
-      // Priorità urgente in cima
-      if (a.priorita === 'urgente' && b.priorita !== 'urgente') return -1
-      if (a.priorita !== 'urgente' && b.priorita === 'urgente') return 1
-      
-      // Ordina per data di scadenza
-      if (a.dataScadenza && b.dataScadenza) {
-        return new Date(a.dataScadenza).getTime() - new Date(b.dataScadenza).getTime()
-      }
-      if (a.dataScadenza && !b.dataScadenza) return -1
-      if (!a.dataScadenza && b.dataScadenza) return 1
-      
-      return 0
-    })
-
-    setFilteredTasks(filtered)
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage }))
   }
 
   const updateTaskStatus = async (taskId: number, newStato: string) => {
@@ -237,7 +237,7 @@ function TasksPageContent() {
     }
   }
 
-  // Statistiche
+  // Statistiche (mostrate per la pagina corrente)
   const taskCompletati = tasks.filter(t => t.stato === 'completato').length
   const taskInCorso = tasks.filter(t => t.stato === 'in_corso').length
   const taskDaFare = tasks.filter(t => t.stato === 'da_fare').length
@@ -270,9 +270,9 @@ function TasksPageContent() {
           </Link>
           <Link href="/dashboard/tasks/new">
             <Button className="btn-primary">
-              <Plus className="h-4 w-4 mr-2" />
-              Nuovo Task
-            </Button>
+          <Plus className="h-4 w-4 mr-2" />
+          Nuovo Task
+        </Button>
           </Link>
         </div>
       </div>
@@ -280,7 +280,7 @@ function TasksPageContent() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {[
-          { title: "Totale", value: tasks.length, icon: CheckSquare, color: "blue", change: "+12%" },
+          { title: "Totale", value: pagination.totalCount, icon: CheckSquare, color: "blue", change: "+12%" },
           { title: "Da Fare", value: taskDaFare, icon: Clock, color: "yellow", change: "+8%" },
           { title: "In Corso", value: taskInCorso, icon: Zap, color: "purple", change: "+15%" },
           { title: "Completati", value: taskCompletati, icon: CheckCircle, color: "green", change: "+22%" }
@@ -331,7 +331,7 @@ function TasksPageContent() {
             </div>
           </motion.div>
         ))}
-      </div>
+        </div>
 
       {/* Advanced Filters */}
       <motion.div 
@@ -345,17 +345,38 @@ function TasksPageContent() {
             {/* Search */}
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ricerca tasks
+                Ricerca avanzata
               </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <div className="flex gap-2">
+                <div className="relative flex-1">
                 <input
                   type="text"
-                  placeholder="Cerca per titolo, descrizione o lead..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Cerca per titolo, descrizione o lead..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   className="form-input pl-10"
                 />
+                </div>
+                <Button
+                  onClick={handleSearch}
+                  className="btn-primary"
+                  disabled={loading}
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Cerca
+                </Button>
+                {search && (
+                  <Button
+                    onClick={() => {
+                      setSearchInput('')
+                      setSearch('')
+                    }}
+                    className="btn-secondary"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -453,13 +474,13 @@ function TasksPageContent() {
 
       {/* Tasks Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredTasks.map((task, index) => {
+        {tasks.map((task, index) => {
           const PriorityIcon = getPriorityIcon(task.priorita)
           const TypeIcon = getTypeIcon(task.tipo)
           const isOverdue = task.dataScadenza && new Date(task.dataScadenza) < new Date() && task.stato !== 'completato'
           
           return (
-            <motion.div 
+            <motion.div
               key={task.id}
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -471,16 +492,16 @@ function TasksPageContent() {
             >
               <div className="p-6">
                 {/* Header */}
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
                     <div className={`h-12 w-12 rounded-lg flex items-center justify-center shadow-lg`}
                          style={{ backgroundColor: task.colore }}>
                       <TypeIcon className="h-6 w-6 text-white" />
-                    </div>
+                  </div>
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
-                        {task.titolo}
-                      </h3>
+                      {task.titolo}
+                    </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge className={getPriorityColorClasses(task.priorita)}>
                           <PriorityIcon className="h-3 w-3 mr-1" />
@@ -501,8 +522,8 @@ function TasksPageContent() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500">Tipo:</span>
                     <span className="font-medium">{getTaskTypeText(task.tipo)}</span>
-                  </div>
-                  
+              </div>
+
                   {task.dataScadenza && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Scadenza:</span>
@@ -515,7 +536,7 @@ function TasksPageContent() {
                         {isOverdue && (
                           <span className="ml-1 text-red-500">⚠️</span>
                         )}
-                      </span>
+                    </span>
                     </div>
                   )}
 
@@ -538,14 +559,14 @@ function TasksPageContent() {
                   <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 mb-4">
                     <div className="line-clamp-3">
                       {task.descrizione.length > 120 ? `${task.descrizione.substring(0, 120)}...` : task.descrizione}
-                    </div>
-                  </div>
+                </div>
+              </div>
                 )}
 
                 {/* Actions */}
                 <div className="space-y-3">
                   {/* Status Quick Actions */}
-                  <div className="flex gap-2">
+                <div className="flex gap-2">
                     {task.stato === 'da_fare' && (
                       <Button
                         size="sm"
@@ -565,18 +586,18 @@ function TasksPageContent() {
                         <Check className="h-4 w-4 mr-1" />
                         Completa
                       </Button>
-                    )}
-                    {task.stato === 'completato' && (
-                      <Button
-                        size="sm"
-                        onClick={() => updateTaskStatus(task.id, 'da_fare')}
+                  )}
+                  {task.stato === 'completato' && (
+                    <Button
+                      size="sm"
+                      onClick={() => updateTaskStatus(task.id, 'da_fare')}
                         className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700"
-                      >
+                    >
                         <Clock className="h-4 w-4 mr-1" />
-                        Riapri
-                      </Button>
-                    )}
-                  </div>
+                      Riapri
+                    </Button>
+                  )}
+                </div>
 
                   {/* Management Actions */}
                   <div className="grid grid-cols-3 gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -591,34 +612,101 @@ function TasksPageContent() {
                       </Button>
                     </Link>
                     <Link href={`/dashboard/tasks/${task.id}`}>
-                      <Button
-                        size="sm"
-                        variant="outline"
+                  <Button
+                    size="sm"
+                    variant="outline"
                         className="btn-secondary group/btn w-full"
-                      >
+                  >
                         <Edit className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
                         Modifica
-                      </Button>
+                  </Button>
                     </Link>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => deleteTask(task.id, task.titolo)}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => deleteTask(task.id, task.titolo)}
                       className="btn-danger group/btn"
-                    >
+                  >
                       <Trash2 className="h-4 w-4 mr-1 group-hover/btn:scale-110 transition-transform" />
                       Elimina
-                    </Button>
+                  </Button>
                   </div>
                 </div>
               </div>
             </motion.div>
           )
         })}
-      </div>
+        </div>
 
-      {/* Empty State */}
-      {filteredTasks.length === 0 && (
+        {/* Pagination */}
+        {!loading && tasks.length > 0 && pagination.totalPages > 1 && (
+          <div className="mt-8 flex flex-col items-center gap-4">
+            <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-4">
+              Mostrati {tasks.length} di {pagination.totalCount} tasks totali • Pagina {pagination.page} di {pagination.totalPages}
+            </div>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => handlePageChange(Math.max(1, pagination.page - 1))}
+                    className={pagination.page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                
+                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                  let pageNumber;
+                  if (pagination.totalPages <= 5) {
+                    pageNumber = i + 1;
+                  } else if (pagination.page <= 3) {
+                    pageNumber = i + 1;
+                  } else if (pagination.page >= pagination.totalPages - 2) {
+                    pageNumber = pagination.totalPages - 4 + i;
+                  } else {
+                    pageNumber = pagination.page - 2 + i;
+                  }
+                  
+                  return (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationLink
+                        onClick={() => handlePageChange(pageNumber)}
+                        isActive={pageNumber === pagination.page}
+                        className="cursor-pointer"
+                      >
+                        {pageNumber}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                })}
+                
+                {pagination.totalPages > 5 && pagination.page < pagination.totalPages - 2 && (
+                  <>
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationLink
+                        onClick={() => handlePageChange(pagination.totalPages)}
+                        className="cursor-pointer"
+                      >
+                        {pagination.totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
+                  </>
+                )}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => handlePageChange(Math.min(pagination.totalPages, pagination.page + 1))}
+                    className={pagination.page === pagination.totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {tasks.length === 0 && !loading && (
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -636,7 +724,7 @@ function TasksPageContent() {
                   : 'Inizia a organizzare il tuo lavoro'}
               </CardTitle>
               <CardDescription>
-                {search || filters.stato !== 'all' || filters.priorita !== 'all' || filters.tipo !== 'all'
+              {search || filters.stato !== 'all' || filters.priorita !== 'all' || filters.tipo !== 'all' 
                   ? 'Prova a modificare i filtri per trovare i task che stai cercando.' 
                   : 'Crea il tuo primo task per iniziare a organizzare e tracciare il tuo lavoro.'
                 }
@@ -851,8 +939,8 @@ function TasksPageContent() {
               </div>
             </div>
           </motion.div>
-        </div>
-      )}
+          </div>
+        )}
     </div>
   )
 }

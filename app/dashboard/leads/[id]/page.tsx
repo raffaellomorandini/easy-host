@@ -130,10 +130,11 @@ export default function LeadDetailPage() {
 
   const fetchAppuntamenti = async () => {
     try {
-      const response = await fetch('/api/appuntamenti')
+      const response = await fetch('/api/appuntamenti?limit=1000')
       if (response.ok) {
         const data = await response.json()
-        const leadAppuntamenti = data.filter((a: Appuntamento) => a.leadId === parseInt(params.id as string))
+        const allAppuntamenti = data.appuntamenti || data
+        const leadAppuntamenti = allAppuntamenti.filter((a: Appuntamento) => a.leadId === parseInt(params.id as string))
         setAppuntamenti(leadAppuntamenti)
       }
     } catch (error) {
@@ -143,10 +144,11 @@ export default function LeadDetailPage() {
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch('/api/tasks')
+      const response = await fetch('/api/tasks?limit=1000')
       if (response.ok) {
         const data = await response.json()
-        const leadTasks = data.filter((t: Task) => t.leadId === parseInt(params.id as string))
+        const allTasks = data.tasks || data
+        const leadTasks = allTasks.filter((t: Task) => t.leadId === parseInt(params.id as string))
         setTasks(leadTasks)
       }
     } catch (error) {

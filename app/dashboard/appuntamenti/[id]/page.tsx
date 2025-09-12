@@ -99,20 +99,17 @@ export default function AppuntamentoDetailPage() {
 
   const fetchAppuntamento = async () => {
     try {
-      const response = await fetch('/api/appuntamenti')
+      const response = await fetch(`/api/appuntamenti?id=${params.id}`)
       if (response.ok) {
-        const data = await response.json()
-        const foundAppuntamento = data.find((a: Appuntamento) => a.id === parseInt(params.id as string))
-        if (foundAppuntamento) {
-          setAppuntamento(foundAppuntamento)
-          setEditForm({
-            data: new Date(foundAppuntamento.data),
-            tipo: foundAppuntamento.tipo,
-            luogo: foundAppuntamento.luogo || '',
-            note: foundAppuntamento.note || '',
-            completato: foundAppuntamento.completato
-          })
-        }
+        const foundAppuntamento = await response.json()
+        setAppuntamento(foundAppuntamento)
+        setEditForm({
+          data: new Date(foundAppuntamento.data),
+          tipo: foundAppuntamento.tipo,
+          luogo: foundAppuntamento.luogo || '',
+          note: foundAppuntamento.note || '',
+          completato: foundAppuntamento.completato
+        })
       }
     } catch (error) {
       console.error('Error fetching appuntamento:', error)
