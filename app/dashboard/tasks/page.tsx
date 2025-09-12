@@ -659,7 +659,7 @@ function TasksPageContent() {
                         Dettagli
                       </Button>
                     </Link>
-                    <Link href={`/dashboard/tasks/${task.id}`}>
+                    <Link href={`/dashboard/tasks/${task.id}?edit=true`}>
                   <Button
                     size="sm"
                     variant="outline"
@@ -972,7 +972,7 @@ function TasksPageContent() {
                       Completa Task
                     </Button>
                   )}
-                  <Link href={`/dashboard/tasks/${selectedTaskForView.id}`}>
+                  <Link href={`/dashboard/tasks/${selectedTaskForView.id}?edit=true`}>
                     <Button className="btn-secondary">
                       <Edit className="h-4 w-4 mr-2" />
                       Modifica

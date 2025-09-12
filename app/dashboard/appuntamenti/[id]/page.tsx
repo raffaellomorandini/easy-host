@@ -1,8 +1,8 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
@@ -60,10 +60,11 @@ interface Lead {
   updatedAt: string
 }
 
-export default function AppuntamentoDetailPage() {
+function AppuntamentoDetailContent() {
   const { data: session } = useSession()
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [appuntamento, setAppuntamento] = useState<Appuntamento | null>(null)
   const [lead, setLead] = useState<Lead | null>(null)
   const [loading, setLoading] = useState(true)
@@ -96,6 +97,14 @@ export default function AppuntamentoDetailPage() {
       fetchLead()
     }
   }, [appuntamento?.leadId])
+
+  // Check for edit mode from URL params
+  useEffect(() => {
+    const editParam = searchParams.get('edit')
+    if (editParam === 'true') {
+      setIsEditing(true)
+    }
+  }, [searchParams])
 
   const fetchAppuntamento = async () => {
     try {
@@ -635,5 +644,17 @@ export default function AppuntamentoDetailPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function AppuntamentoDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Caricamento dettagli appuntamento...</div>
+      </div>
+    }>
+      <AppuntamentoDetailContent />
+    </Suspense>
   )
 }

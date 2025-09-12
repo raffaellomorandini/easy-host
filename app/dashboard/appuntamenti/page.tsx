@@ -650,7 +650,7 @@ export default function AppuntamentiPage() {
                                 Lead
                               </Button>
                             </Link>
-                            <Link href={`/dashboard/appuntamenti/${appuntamento.id}`}>
+                            <Link href={`/dashboard/appuntamenti/${appuntamento.id}?edit=true`}>
                               <Button 
                                 className="btn-secondary group/btn w-full"
                                 size="sm"
@@ -1179,16 +1179,12 @@ export default function AppuntamentiPage() {
                         Completa Appuntamento
                       </Button>
                     )}
-                    <Button
-                      onClick={() => {
-                        handleEditClick(selectedAppForView)
-                        setSelectedAppForView(null)
-                      }}
-                      className="btn-secondary"
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Modifica
-                    </Button>
+                    <Link href={`/dashboard/appuntamenti/${selectedAppForView.id}?edit=true`}>
+                      <Button className="btn-secondary">
+                        <Edit className="h-4 w-4 mr-2" />
+                        Modifica
+                      </Button>
+                    </Link>
                   </div>
                   <Button
                     onClick={() => setSelectedAppForView(null)}
