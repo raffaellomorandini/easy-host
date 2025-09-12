@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
         })
         .from(tasks)
         .leftJoin(leads, eq(tasks.leadId, leads.id))
-        .where(and(eq(tasks.id, parseInt(id)), eq(tasks.userId, session.user.id)))
+        .where(and(eq(tasks.id, parseInt(id))))
         .limit(1);
       
       if (task.length === 0) {
