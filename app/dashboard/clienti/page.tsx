@@ -104,10 +104,10 @@ export default function ClientiPage() {
 
   const fetchAppuntamenti = async () => {
     try {
-      const response = await fetch('/api/appuntamenti')
+      const response = await fetch('/api/appuntamenti?limit=1000') // Carica tutti gli appuntamenti per i clienti
       if (response.ok) {
         const data = await response.json()
-        setAppuntamenti(data)
+        setAppuntamenti(data.appuntamenti || []) // Estrae l'array appuntamenti dalla nuova struttura
       }
     } catch (error) {
       console.error('Error fetching appuntamenti:', error)
