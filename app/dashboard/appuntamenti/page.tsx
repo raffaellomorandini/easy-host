@@ -70,6 +70,7 @@ export default function AppuntamentiPage() {
   })
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed' | 'overdue'>('all')
   const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; appuntamento: Appuntamento | null }>({
     isOpen: false,
     appuntamento: null
@@ -145,6 +146,10 @@ export default function AppuntamentiPage() {
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }))
+  }
+
+  const handleSearch = () => {
+    setSearch(searchInput)
   }
 
   const toggleCompletato = async (appuntamentoId: number, completato: boolean) => {
@@ -362,17 +367,38 @@ export default function AppuntamentiPage() {
               {/* Search */}
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ricerca appuntamenti
+                  Ricerca avanzata
                 </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    placeholder="Cerca per cliente, tipo, luogo o note..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="form-input pl-10"
-                  />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder="Cerca per cliente, tipo, luogo o note..."
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      className="form-input pl-10"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleSearch}
+                    className="btn-primary"
+                    disabled={loading}
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Cerca
+                  </Button>
+                  {search && (
+                    <Button
+                      onClick={() => {
+                        setSearchInput('')
+                        setSearch('')
+                      }}
+                      className="btn-secondary"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
 

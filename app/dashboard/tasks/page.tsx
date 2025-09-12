@@ -277,6 +277,55 @@ function TasksPageContent() {
         </div>
       </div>
 
+      {/* Search Section */}
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="card mb-6"
+      >
+        <div className="p-6">
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ricerca avanzata
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Cerca per titolo, descrizione o lead..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    className="form-input w-full"
+                  />
+                </div>
+                <Button
+                  onClick={handleSearch}
+                  className="btn-primary"
+                  disabled={loading}
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Cerca
+                </Button>
+                {search && (
+                  <Button
+                    onClick={() => {
+                      setSearchInput('')
+                      setSearch('')
+                    }}
+                    className="btn-secondary"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {[
@@ -289,7 +338,7 @@ function TasksPageContent() {
             key={stat.title}
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: index * 0.1, duration: 0.5 }}
+            transition={{ delay: 0.3 + index * 0.1, duration: 0.5 }}
             className="card card-hover overflow-hidden"
           >
             <div className="p-6">
@@ -337,51 +386,13 @@ function TasksPageContent() {
       <motion.div 
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.7 }}
         className="card mb-6"
       >
         <div className="p-6">
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Search */}
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ricerca avanzata
-              </label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                <input
-                  type="text"
-                    placeholder="Cerca per titolo, descrizione o lead..."
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  className="form-input pl-10"
-                />
-                </div>
-                <Button
-                  onClick={handleSearch}
-                  className="btn-primary"
-                  disabled={loading}
-                >
-                  <Search className="h-4 w-4 mr-2" />
-                  Cerca
-                </Button>
-                {search && (
-                  <Button
-                    onClick={() => {
-                      setSearchInput('')
-                      setSearch('')
-                    }}
-                    className="btn-secondary"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-
+          <div className="flex flex-col gap-6">
             {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:w-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Status Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
