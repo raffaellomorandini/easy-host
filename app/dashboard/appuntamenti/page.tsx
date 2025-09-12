@@ -26,6 +26,15 @@ import {
   TrendingUp,
   ExternalLink
 } from 'lucide-react'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 
 interface Appuntamento {
   id: number
@@ -40,11 +49,25 @@ interface Appuntamento {
   leadLocalita: string
 }
 
+interface PaginationInfo {
+  page: number
+  limit: number
+  totalCount: number
+  hasMore: boolean
+  totalPages: number
+}
+
 export default function AppuntamentiPage() {
   const { data: session } = useSession()
   const [appuntamenti, setAppuntamenti] = useState<Appuntamento[]>([])
-  const [filteredAppuntamenti, setFilteredAppuntamenti] = useState<Appuntamento[]>([])
   const [loading, setLoading] = useState(true)
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 20,
+    totalCount: 0,
+    hasMore: true,
+    totalPages: 0
+  })
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed' | 'overdue'>('all')
   const [search, setSearch] = useState('')
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; appuntamento: Appuntamento | null }>({
@@ -63,11 +86,12 @@ export default function AppuntamentiPage() {
     if (session) {
       fetchAppuntamenti()
     }
-  }, [session])
+  }, [session, pagination.page, filter, search])
 
   useEffect(() => {
-    filterAppuntamenti()
-  }, [appuntamenti, filter, search])
+    // Reset alla pagina 1 quando cambiano i filtri
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }, [filter, search])
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -94,11 +118,23 @@ export default function AppuntamentiPage() {
   }, [deleteModal.isOpen, editModal.isOpen])
 
   const fetchAppuntamenti = async () => {
+    setLoading(true)
+
     try {
-      const response = await fetch('/api/appuntamenti')
+      const params = new URLSearchParams({
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
+        ...(search && { search }),
+        ...(filter === 'completed' && { completato: 'true' }),
+        ...(filter === 'upcoming' && { completato: 'false' }),
+        ...(filter === 'overdue' && { completato: 'false' })
+      })
+
+      const response = await fetch(`/api/appuntamenti?${params}`)
       if (response.ok) {
         const data = await response.json()
-        setAppuntamenti(data)
+        setAppuntamenti(data.appuntamenti)
+        setPagination(data.pagination)
       }
     } catch (error) {
       console.error('Error fetching appuntamenti:', error)
@@ -107,25 +143,8 @@ export default function AppuntamentiPage() {
     }
   }
 
-  const filterAppuntamenti = () => {
-    let filtered = appuntamenti
-    const now = new Date()
-
-    switch (filter) {
-      case 'upcoming':
-        filtered = filtered.filter(a => !a.completato && new Date(a.data) >= now)
-        break
-      case 'completed':
-        filtered = filtered.filter(a => a.completato)
-        break
-      case 'overdue':
-        filtered = filtered.filter(a => !a.completato && new Date(a.data) < now)
-        break
-    }
-
-    // Ordina per data
-    filtered.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
-    setFilteredAppuntamenti(filtered)
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage }))
   }
 
   const toggleCompletato = async (appuntamentoId: number, completato: boolean) => {
@@ -257,7 +276,7 @@ export default function AppuntamentiPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestione Appuntamenti</h1>
           <p className="text-gray-600 mt-1">
-            {appuntamenti.length} appuntamenti totali • {appuntamenti.filter(a => !a.completato && new Date(a.data) >= new Date()).length} prossimi • {appuntamenti.filter(a => a.completato).length} completati
+            {pagination.totalCount} appuntamenti totali • Pagina {pagination.page} di {pagination.totalPages}
           </p>
         </div>
         <div className="flex gap-3">
@@ -278,10 +297,10 @@ export default function AppuntamentiPage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
-            { title: "Totale", value: appuntamenti.length, icon: Calendar, color: "blue", change: "+12%" },
-            { title: "Prossimi", value: appuntamenti.filter(a => !a.completato && new Date(a.data) >= new Date()).length, icon: Clock, color: "yellow", change: "+8%" },
-            { title: "Completati", value: appuntamenti.filter(a => a.completato).length, icon: CheckCircle, color: "green", change: "+15%" },
-            { title: "Scaduti", value: appuntamenti.filter(a => !a.completato && new Date(a.data) < new Date()).length, icon: X, color: "red", change: "-5%" }
+            { title: "Totale", value: pagination.totalCount, icon: Calendar, color: "blue", change: "+12%" },
+            { title: "Mostrati", value: appuntamenti.length, icon: Clock, color: "yellow", change: "+8%" },
+            { title: "Pagina", value: pagination.page, icon: CheckCircle, color: "green", change: "+15%" },
+            { title: "Pagine", value: pagination.totalPages, icon: X, color: "red", change: "-5%" }
           ].map((stat, index) => (
             <motion.div
               key={stat.title}
@@ -362,13 +381,13 @@ export default function AppuntamentiPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Filtra per stato
                 </label>
-                <div className="flex gap-2 flex-wrap">
-                  {[
-                    { key: 'all', label: 'Tutti', count: appuntamenti.length, color: 'gray', icon: CalendarDays },
-                    { key: 'upcoming', label: 'Prossimi', count: appuntamenti.filter(a => !a.completato && new Date(a.data) >= new Date()).length, color: 'blue', icon: Clock },
-                    { key: 'completed', label: 'Completati', count: appuntamenti.filter(a => a.completato).length, color: 'green', icon: CheckCircle },
-                    { key: 'overdue', label: 'Scaduti', count: appuntamenti.filter(a => !a.completato && new Date(a.data) < new Date()).length, color: 'red', icon: AlertCircle }
-                  ].map(({ key, label, count, color, icon: Icon }) => (
+                  <div className="flex gap-2 flex-wrap">
+                    {[
+                      { key: 'all', label: 'Tutti', color: 'gray', icon: CalendarDays },
+                      { key: 'upcoming', label: 'Prossimi', color: 'blue', icon: Clock },
+                      { key: 'completed', label: 'Completati', color: 'green', icon: CheckCircle },
+                      { key: 'overdue', label: 'Scaduti', color: 'red', icon: AlertCircle }
+                    ].map(({ key, label, color, icon: Icon }) => (
             <Button
                       key={key}
                       onClick={() => setFilter(key as any)}
@@ -380,14 +399,7 @@ export default function AppuntamentiPage() {
                       }`}
                     >
                       <Icon className="h-4 w-4" />
-                      {label} 
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${
-                        filter === key 
-                          ? 'bg-white/20 text-white' 
-                          : `bg-${color}-100 text-${color}-700`
-                      }`}>
-                        {count}
-                      </span>
+                      {label}
             </Button>
                   ))}
                 </div>
@@ -398,7 +410,7 @@ export default function AppuntamentiPage() {
 
         {/* Appuntamenti List */}
         <div className="space-y-4">
-          {filteredAppuntamenti.map((appuntamento, index) => {
+          {appuntamenti.map((appuntamento, index) => {
             const isOverdue = !appuntamento.completato && new Date(appuntamento.data) < new Date()
             const isUpcoming = !appuntamento.completato && new Date(appuntamento.data) >= new Date()
             
@@ -588,8 +600,75 @@ export default function AppuntamentiPage() {
           })}
         </div>
 
+        {/* Pagination */}
+        {!loading && appuntamenti.length > 0 && pagination.totalPages > 1 && (
+          <div className="mt-8 flex flex-col items-center gap-4">
+            <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-4">
+              Mostrati {appuntamenti.length} di {pagination.totalCount} appuntamenti totali • Pagina {pagination.page} di {pagination.totalPages}
+            </div>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => handlePageChange(Math.max(1, pagination.page - 1))}
+                    className={pagination.page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                
+                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                  let pageNumber;
+                  if (pagination.totalPages <= 5) {
+                    pageNumber = i + 1;
+                  } else if (pagination.page <= 3) {
+                    pageNumber = i + 1;
+                  } else if (pagination.page >= pagination.totalPages - 2) {
+                    pageNumber = pagination.totalPages - 4 + i;
+                  } else {
+                    pageNumber = pagination.page - 2 + i;
+                  }
+                  
+                  return (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationLink
+                        onClick={() => handlePageChange(pageNumber)}
+                        isActive={pageNumber === pagination.page}
+                        className="cursor-pointer"
+                      >
+                        {pageNumber}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                })}
+                
+                {pagination.totalPages > 5 && pagination.page < pagination.totalPages - 2 && (
+                  <>
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationLink
+                        onClick={() => handlePageChange(pagination.totalPages)}
+                        className="cursor-pointer"
+                      >
+                        {pagination.totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
+                  </>
+                )}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => handlePageChange(Math.min(pagination.totalPages, pagination.page + 1))}
+                    className={pagination.page === pagination.totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+
         {/* Empty State */}
-        {filteredAppuntamenti.length === 0 && (
+        {appuntamenti.length === 0 && !loading && (
           <motion.div 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}

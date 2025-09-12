@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { appuntamenti, leads } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, or, ilike, desc, asc, and } from 'drizzle-orm';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await auth();
   
   if (!session) {
@@ -12,6 +12,71 @@ export async function GET() {
   }
 
   try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search') || '';
+    const completato = searchParams.get('completato') || '';
+    const tipo = searchParams.get('tipo') || '';
+    
+    // Se è richiesto un ID specifico, restituisci solo quell'appuntamento
+    if (id) {
+      const appuntamento = await db
+        .select({
+          id: appuntamenti.id,
+          leadId: appuntamenti.leadId,
+          data: appuntamenti.data,
+          tipo: appuntamenti.tipo,
+          luogo: appuntamenti.luogo,
+          note: appuntamenti.note,
+          completato: appuntamenti.completato,
+          createdAt: appuntamenti.createdAt,
+          leadNome: leads.nome,
+          leadLocalita: leads.localita,
+        })
+        .from(appuntamenti)
+        .leftJoin(leads, eq(appuntamenti.leadId, leads.id))
+        .where(eq(appuntamenti.id, parseInt(id)))
+        .limit(1);
+      
+      if (appuntamento.length === 0) {
+        return NextResponse.json({ error: 'Appuntamento not found' }, { status: 404 });
+      }
+      return NextResponse.json(appuntamento[0]);
+    }
+    
+    const offset = (page - 1) * limit;
+
+    // Costruisci le condizioni WHERE
+    const conditions = [];
+    
+    if (search) {
+      conditions.push(
+        or(
+          ilike(leads.nome, `%${search}%`),
+          ilike(leads.localita, `%${search}%`),
+          ilike(appuntamenti.tipo, `%${search}%`),
+          ilike(appuntamenti.luogo, `%${search}%`),
+          ilike(appuntamenti.note, `%${search}%`)
+        )
+      );
+    }
+
+    if (completato && completato !== 'all') {
+      conditions.push(eq(appuntamenti.completato, completato === 'true'));
+    }
+
+    if (tipo && tipo !== 'all') {
+      conditions.push(eq(appuntamenti.tipo, tipo));
+    }
+
+    // Costruisci la WHERE clause finale
+    const whereClause = conditions.length > 0 
+      ? conditions.length === 1 ? conditions[0] : and(...conditions)
+      : undefined;
+
+    // Esecuzione query con paginazione
     const allAppuntamenti = await db
       .select({
         id: appuntamenti.id,
@@ -27,10 +92,33 @@ export async function GET() {
       })
       .from(appuntamenti)
       .leftJoin(leads, eq(appuntamenti.leadId, leads.id))
-      .orderBy(appuntamenti.data);
+      .where(whereClause)
+      .orderBy(desc(appuntamenti.data))
+      .limit(limit)
+      .offset(offset);
+
+    // Conteggio totale per la paginazione
+    const totalCountResult = await db
+      .select({ count: appuntamenti.id })
+      .from(appuntamenti)
+      .leftJoin(leads, eq(appuntamenti.leadId, leads.id))
+      .where(whereClause);
     
-    return NextResponse.json(allAppuntamenti);
+    const totalCount = totalCountResult.length;
+    const hasMore = offset + allAppuntamenti.length < totalCount;
+
+    return NextResponse.json({
+      appuntamenti: allAppuntamenti,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        hasMore,
+        totalPages: Math.ceil(totalCount / limit)
+      }
+    });
   } catch (error) {
+    console.error('Error fetching appuntamenti:', error);
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
   }
 }

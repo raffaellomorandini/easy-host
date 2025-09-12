@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { tasks, leads } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, or, ilike, desc } from 'drizzle-orm';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await auth();
   
   if (!session?.user?.id) {
@@ -12,6 +12,82 @@ export async function GET() {
   }
 
   try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search') || '';
+    const stato = searchParams.get('stato') || '';
+    const priorita = searchParams.get('priorita') || '';
+    const tipo = searchParams.get('tipo') || '';
+    const completato = searchParams.get('completato') || '';
+    
+    // Se è richiesto un ID specifico, restituisci solo quel task
+    if (id) {
+      const task = await db
+        .select({
+          id: tasks.id,
+          userId: tasks.userId,
+          leadId: tasks.leadId,
+          titolo: tasks.titolo,
+          descrizione: tasks.descrizione,
+          tipo: tasks.tipo,
+          priorita: tasks.priorita,
+          stato: tasks.stato,
+          dataScadenza: tasks.dataScadenza,
+          completato: tasks.completato,
+          colore: tasks.colore,
+          createdAt: tasks.createdAt,
+          updatedAt: tasks.updatedAt,
+          leadNome: leads.nome,
+          leadLocalita: leads.localita,
+          leadStatus: leads.status
+        })
+        .from(tasks)
+        .leftJoin(leads, eq(tasks.leadId, leads.id))
+        .where(and(eq(tasks.id, parseInt(id)), eq(tasks.userId, session.user.id)))
+        .limit(1);
+      
+      if (task.length === 0) {
+        return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+      }
+      return NextResponse.json(task[0]);
+    }
+    
+    const offset = (page - 1) * limit;
+
+    // Costruisci le condizioni WHERE
+    const conditions = [eq(tasks.userId, session.user.id)];
+    
+    if (search) {
+      conditions.push(
+        or(
+          ilike(tasks.titolo, `%${search}%`),
+          ilike(tasks.descrizione, `%${search}%`)
+        )
+      );
+    }
+
+    if (stato && stato !== 'all') {
+      conditions.push(eq(tasks.stato, stato));
+    }
+
+    if (priorita && priorita !== 'all') {
+      conditions.push(eq(tasks.priorita, priorita));
+    }
+
+    if (tipo && tipo !== 'all') {
+      conditions.push(eq(tasks.tipo, tipo));
+    }
+
+    if (completato && completato !== 'all') {
+      conditions.push(eq(tasks.completato, completato === 'true'));
+    }
+
+    // Costruisci la WHERE clause finale
+    const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
+
+    // Esecuzione query con paginazione
     const userTasks = await db
       .select({
         id: tasks.id,
@@ -31,11 +107,33 @@ export async function GET() {
         leadLocalita: leads.localita,
         leadStatus: leads.status
       })
-        .from(tasks)
-        .leftJoin(leads, eq(tasks.leadId, leads.id))
-        .orderBy(tasks.createdAt);
+      .from(tasks)
+      .leftJoin(leads, eq(tasks.leadId, leads.id))
+      .where(whereClause)
+      .orderBy(desc(tasks.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    // Conteggio totale per la paginazione
+    const totalCountResult = await db
+      .select({ count: tasks.id })
+      .from(tasks)
+      .leftJoin(leads, eq(tasks.leadId, leads.id))
+      .where(whereClause);
     
-    return NextResponse.json(userTasks);
+    const totalCount = totalCountResult.length;
+    const hasMore = offset + userTasks.length < totalCount;
+
+    return NextResponse.json({
+      tasks: userTasks,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        hasMore,
+        totalPages: Math.ceil(totalCount / limit)
+      }
+    });
   } catch (error) {
     console.error('Error fetching tasks:', error);
     return NextResponse.json({ 

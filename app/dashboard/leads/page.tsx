@@ -30,6 +30,15 @@ import {
   X,
   CheckSquare
 } from 'lucide-react'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 
 interface Lead {
   id: number
@@ -58,7 +67,6 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [allLeads, setAllLeads] = useState<Lead[]>([]) // Per i conteggi dei filtri
   const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 20,
@@ -70,49 +78,30 @@ export default function LeadsPage() {
   const [contactFilter, setContactFilter] = useState<'all' | 'contattato' | 'non_contattato'>('all')
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
-  const observerTarget = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (session) {
-      fetchLeads(true) // Reset on first load
+      fetchLeads()
+    }
+  }, [session, pagination.page, filter, contactFilter, search])
+
+  useEffect(() => {
+    if (session) {
       fetchAllLeadsForCounts() // Per i conteggi dei filtri
     }
   }, [session])
 
   useEffect(() => {
-    if (session) {
-      fetchLeads(true) // Reset quando cambiano i filtri
-    }
+    // Reset alla pagina 1 quando cambiano i filtri
+    setPagination(prev => ({ ...prev, page: 1 }))
   }, [filter, contactFilter, search])
 
-  // Intersection Observer per infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && pagination.hasMore && !loading && !loadingMore) {
-          loadMoreLeads()
-        }
-      },
-      { threshold: 0.1 }
-    )
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current)
-    }
-
-    return () => observer.disconnect()
-  }, [pagination.hasMore, loading, loadingMore])
-
-  const fetchLeads = async (reset = false) => {
-    if (reset) {
-      setLoading(true)
-      setLeads([])
-      setPagination(prev => ({ ...prev, page: 1 }))
-    }
+  const fetchLeads = async () => {
+    setLoading(true)
 
     try {
       const params = new URLSearchParams({
-        page: reset ? '1' : pagination.page.toString(),
+        page: pagination.page.toString(),
         limit: pagination.limit.toString(),
         ...(search && { search }),
         ...(filter !== 'all' && { status: filter }),
@@ -122,48 +111,13 @@ export default function LeadsPage() {
       const response = await fetch(`/api/leads?${params}`)
       if (response.ok) {
         const data = await response.json()
-        
-        if (reset) {
-          setLeads(data.leads)
-        } else {
-          setLeads(prev => [...prev, ...data.leads])
-        }
-        
+        setLeads(data.leads)
         setPagination(data.pagination)
       }
     } catch (error) {
       console.error('Error fetching leads:', error)
     } finally {
       setLoading(false)
-      setLoadingMore(false)
-    }
-  }
-
-  const loadMoreLeads = async () => {
-    if (!pagination.hasMore || loadingMore) return
-    
-    setLoadingMore(true)
-    setPagination(prev => ({ ...prev, page: prev.page + 1 }))
-    
-    try {
-      const params = new URLSearchParams({
-        page: (pagination.page + 1).toString(),
-        limit: pagination.limit.toString(),
-        ...(search && { search }),
-        ...(filter !== 'all' && { status: filter }),
-        ...(contactFilter !== 'all' && { contattato: contactFilter })
-      })
-
-      const response = await fetch(`/api/leads?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        setLeads(prev => [...prev, ...data.leads])
-        setPagination(data.pagination)
-      }
-    } catch (error) {
-      console.error('Error loading more leads:', error)
-    } finally {
-      setLoadingMore(false)
     }
   }
 
@@ -191,6 +145,10 @@ export default function LeadsPage() {
     setContactFilter(newFilter)
   }
 
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage }))
+  }
+
   const updateLeadStatus = async (leadId: number, newStatus: string) => {
     try {
       const response = await fetch('/api/leads', {
@@ -200,7 +158,7 @@ export default function LeadsPage() {
       })
 
       if (response.ok) {
-        fetchLeads(true) // Reset per aggiornare i dati
+        fetchLeads() // Reset per aggiornare i dati
         fetchAllLeadsForCounts() // Aggiorna i conteggi
         toast.success('Status aggiornato con successo!')
       } else {
@@ -221,7 +179,7 @@ export default function LeadsPage() {
       })
 
       if (response.ok) {
-        fetchLeads(true) // Reset per aggiornare i dati
+        fetchLeads() // Reset per aggiornare i dati
         fetchAllLeadsForCounts() // Aggiorna i conteggi
         toast.success('Contatto aggiornato!')
       } else {
@@ -249,7 +207,7 @@ export default function LeadsPage() {
       })
 
       if (response.ok) {
-        fetchLeads(true) // Reset per aggiornare i dati
+        fetchLeads() // Reset per aggiornare i dati
         fetchAllLeadsForCounts() // Aggiorna i conteggi
         toast.success('Lead eliminata con successo!')
       } else {
@@ -672,30 +630,70 @@ export default function LeadsPage() {
           ))}
         </div>
 
-      {/* Loading More Indicator */}
-      {loadingMore && (
-        <div className="flex justify-center py-8">
-          <div className="flex items-center gap-2 text-gray-600">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            Caricamento altre leads...
+      {/* Pagination */}
+      {!loading && leads.length > 0 && pagination.totalPages > 1 && (
+        <div className="mt-8 flex flex-col items-center gap-4">
+          <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-4">
+            Mostrati {leads.length} di {pagination.totalCount} leads totali • Pagina {pagination.page} di {pagination.totalPages}
           </div>
-        </div>
-      )}
-
-      {/* Infinite Scroll Observer Target */}
-      {pagination.hasMore && !loading && (
-        <div ref={observerTarget} className="h-10 flex items-center justify-center">
-          <div className="text-sm text-gray-500">Scorri per caricare altre leads...</div>
-        </div>
-      )}
-
-      {/* Pagination Info */}
-      {!loading && leads.length > 0 && (
-        <div className="mt-6 text-center text-sm text-gray-600 bg-gray-50 rounded-lg p-4">
-          Mostrati {leads.length} di {pagination.totalCount} leads totali
-          {pagination.hasMore && (
-            <span> • Pagina {pagination.page} di {pagination.totalPages}</span>
-          )}
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => handlePageChange(Math.max(1, pagination.page - 1))}
+                  className={pagination.page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              
+              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                let pageNumber;
+                if (pagination.totalPages <= 5) {
+                  pageNumber = i + 1;
+                } else if (pagination.page <= 3) {
+                  pageNumber = i + 1;
+                } else if (pagination.page >= pagination.totalPages - 2) {
+                  pageNumber = pagination.totalPages - 4 + i;
+                } else {
+                  pageNumber = pagination.page - 2 + i;
+                }
+                
+                return (
+                  <PaginationItem key={pageNumber}>
+                    <PaginationLink
+                      onClick={() => handlePageChange(pageNumber)}
+                      isActive={pageNumber === pagination.page}
+                      className="cursor-pointer"
+                    >
+                      {pageNumber}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+              
+              {pagination.totalPages > 5 && pagination.page < pagination.totalPages - 2 && (
+                <>
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationLink
+                      onClick={() => handlePageChange(pagination.totalPages)}
+                      className="cursor-pointer"
+                    >
+                      {pagination.totalPages}
+                    </PaginationLink>
+                  </PaginationItem>
+                </>
+              )}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => handlePageChange(Math.min(pagination.totalPages, pagination.page + 1))}
+                  className={pagination.page === pagination.totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
 
