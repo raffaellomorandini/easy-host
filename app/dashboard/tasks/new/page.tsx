@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
+import { LeadCombobox } from '@/components/ui/lead-combobox'
 
 interface Lead {
   id: number
@@ -186,19 +187,6 @@ function NewTaskForm() {
     }
   }
 
-  const handleLeadSelect = (leadId: string) => {
-    if (leadId === '0') {
-      setSelectedLead(null)
-      setFormData(prev => ({ ...prev, leadId: 0 }))
-    } else {
-      const lead = searchedLeads.find(l => l.id === parseInt(leadId))
-      if (lead) {
-        setSelectedLead(lead)
-        setFormData(prev => ({ ...prev, leadId: lead.id }))
-      }
-    }
-  }
-
   const getPriorityColor = (priorita: string) => {
     switch (priorita) {
       case 'urgente': return '#ef4444'
@@ -206,30 +194,6 @@ function NewTaskForm() {
       case 'media': return '#eab308'
       case 'bassa': return '#22c55e'
       default: return '#6b7280'
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'cliente_confermato': return 'default'
-      case 'cliente_attesa': return 'secondary'
-      case 'foto': return 'outline'
-      case 'appuntamento': return 'default'
-      case 'ghost': return 'destructive'
-      case 'ricontattare': return 'secondary'
-      default: return 'outline'
-    }
-  }
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'cliente_confermato': return 'Cliente Confermato'
-      case 'cliente_attesa': return 'Cliente in Attesa'
-      case 'foto': return 'Foto'
-      case 'appuntamento': return 'Appuntamento'
-      case 'ghost': return 'Ghost'
-      case 'ricontattare': return 'Ricontattare'
-      default: return 'Lead'
     }
   }
 
@@ -383,120 +347,30 @@ function NewTaskForm() {
                 Associa questo task a una lead specifica se necessario
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <label htmlFor="leadSearch" className="block text-sm font-medium text-gray-700 mb-2">
-                  Cerca Lead
-                </label>
-                <div className="relative mb-3">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    id="leadSearch"
-                    placeholder="Cerca per nome, località, email o telefono..."
-                    value={leadSearchTerm}
-                    onChange={(e) => setLeadSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-10 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Seleziona Lead
+                  </label>
+                  <LeadCombobox
+                    leads={searchedLeads}
+                    selectedLead={selectedLead}
+                    onSelectLead={(lead) => {
+                      setSelectedLead(lead)
+                      setFormData(prev => ({ ...prev, leadId: lead?.id || 0 }))
+                    }}
+                    onSearch={setLeadSearchTerm}
+                    searching={searching}
+                    placeholder="Cerca e seleziona una lead..."
+                    emptyMessage="Nessuna lead trovata"
                   />
-                  {searching && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                    </div>
-                  )}
                 </div>
-
-                <Select value={selectedLead?.id.toString() || '0'} onValueChange={handleLeadSelect}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={leadSearchTerm.trim() === '' ? 'Inizia a digitare per cercare lead...' : 'Seleziona una lead...'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">Nessuna lead associata</SelectItem>
-                    {selectedLead && formData.leadId === selectedLead.id && (
-                      <SelectItem key={selectedLead.id} value={selectedLead.id.toString()}>
-                        {selectedLead.nome} - {selectedLead.localita} ({selectedLead.camere} camera{selectedLead.camere > 1 ? 'e' : ''})
-                      </SelectItem>
-                    )}
-                    {searchedLeads.map((lead) => (
-                      <SelectItem key={lead.id} value={lead.id.toString()}>
-                        {lead.nome} - {lead.localita} ({lead.camere} camera{lead.camere > 1 ? 'e' : ''})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {leadSearchTerm.trim() === '' && !selectedLead && (
-                  <div className="mt-2 p-3 text-sm text-gray-600 bg-gray-50 rounded-lg">
-                    💡 Inizia a digitare nel campo di ricerca per trovare le lead
+                
+                {!selectedLead && (
+                  <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
+                    💡 La selezione di una lead è opzionale. Puoi associare questo task a una lead per un migliore tracciamento.
                   </div>
-                )}
-
-                {leadSearchTerm && !searching && searchedLeads.length === 0 && (
-                  <div className="mt-2 p-3 text-sm text-gray-500 bg-gray-50 rounded-lg">
-                    Nessuna lead trovata per &quot;{leadSearchTerm}&quot;
-                  </div>
-                )}
-
-                {searchedLeads.length > 0 && leadSearchTerm && (
-                  <div className="mt-2 p-3 text-sm text-blue-600 bg-blue-50 rounded-lg">
-                    {searchedLeads.length} lead{searchedLeads.length > 1 ? 's' : ''} trovata{searchedLeads.length > 1 ? 'e' : ''}
-                  </div>
-                )}
-
-                {selectedLead && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback className="bg-blue-600 text-white">
-                            {selectedLead.nome.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h4 className="font-semibold text-blue-900">{selectedLead.nome}</h4>
-                          <div className="flex items-center gap-4 text-sm text-blue-700">
-                            <span className="flex items-center gap-1">
-                              <MapPin className="h-4 w-4" />
-                              {selectedLead.localita}
-                            </span>
-                            <span>{selectedLead.camere} camera{selectedLead.camere > 1 ? 'e' : ''}</span>
-                            {selectedLead.telefono && (
-                              <a href={`tel:${selectedLead.telefono}`} className="flex items-center gap-1 hover:underline">
-                                <Phone className="h-4 w-4" />
-                                {selectedLead.telefono}
-                              </a>
-                            )}
-                            {selectedLead.email && (
-                              <a href={`mailto:${selectedLead.email}`} className="flex items-center gap-1 hover:underline">
-                                <Mail className="h-4 w-4" />
-                                {selectedLead.email}
-                              </a>
-                            )}
-                          </div>
-                          <div className="mt-2">
-                            <Badge variant={getStatusColor(selectedLead.status) as any}>
-                              {getStatusText(selectedLead.status)}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedLead(null)
-                          setFormData(prev => ({ ...prev, leadId: 0 }))
-                          setLeadSearchTerm('')
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </motion.div>
                 )}
               </div>
             </CardContent>

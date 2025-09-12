@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
+import { LeadCombobox } from '@/components/ui/lead-combobox'
 import Link from 'next/link'
 import { ArrowLeft, Save, X, Search, Calendar, User, MapPin } from 'lucide-react'
 
@@ -198,105 +199,30 @@ function NewAppuntamentoForm() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 gap-6">
-                <div>
-                  <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-                    Cerca Lead
-                  </label>
-                  <div className="relative mb-3">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <input
-                      type="text"
-                      id="search"
-                      placeholder="Cerca per nome, località, email o telefono..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-10 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Seleziona Lead *
+                    </label>
+                    <LeadCombobox
+                      leads={searchedLeads}
+                      selectedLead={selectedLead}
+                      onSelectLead={(lead) => {
+                        setSelectedLead(lead)
+                        setFormData(prev => ({ ...prev, leadId: lead?.id || 0 }))
+                      }}
+                      onSearch={setSearchTerm}
+                      searching={searching}
+                      placeholder="Cerca e seleziona una lead per l'appuntamento..."
+                      emptyMessage="Nessuna lead trovata"
                     />
-                    {searching && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                      </div>
-                    )}
                   </div>
                   
-                  <label htmlFor="leadId" className="block text-sm font-medium text-gray-700 mb-2">
-                    Seleziona Lead *
-                  </label>
-                  <Select 
-                    value={selectedLead?.id.toString() || '0'} 
-                    onValueChange={(value) => {
-                      if (value === '0') {
-                        setSelectedLead(null)
-                        setFormData(prev => ({ ...prev, leadId: 0 }))
-                      } else {
-                        const lead = searchedLeads.find(l => l.id === parseInt(value))
-                        if (lead) {
-                          setSelectedLead(lead)
-                          setFormData(prev => ({ ...prev, leadId: lead.id }))
-                        }
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={searchTerm.trim() === '' ? 'Inizia a digitare per cercare lead...' : 'Seleziona una lead...'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">Nessuna lead associata</SelectItem>
-                      {selectedLead && formData.leadId === selectedLead.id && (
-                        <SelectItem key={selectedLead.id} value={selectedLead.id.toString()}>
-                          {selectedLead.nome} - {selectedLead.localita} ({selectedLead.camere} camera{selectedLead.camere > 1 ? 'e' : ''})
-                        </SelectItem>
-                      )}
-                      {searchedLeads.map((lead) => (
-                        <SelectItem key={lead.id} value={lead.id.toString()}>
-                          {lead.nome} - {lead.localita} ({lead.camere} camera{lead.camere > 1 ? 'e' : ''})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  
-                  {searchTerm.trim() === '' && !selectedLead && (
-                    <div className="mt-2 p-2 text-sm text-gray-600 bg-gray-50 rounded">
-                      💡 Inizia a digitare nel campo di ricerca per trovare le lead
+                  {!selectedLead && (
+                    <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                      ⚠️ È necessario selezionare una lead per creare un appuntamento.
                     </div>
                   )}
-                  
-                  {searchTerm && !searching && searchedLeads.length === 0 && (
-                    <div className="mt-2 p-2 text-sm text-gray-500 bg-gray-50 rounded">
-                      Nessuna lead trovata per &quot;{searchTerm}&quot;
-                    </div>
-                  )}
-                  
-                  {searchedLeads.length > 0 && searchTerm && (
-                    <div className="mt-2 p-2 text-sm text-blue-600 bg-blue-50 rounded">
-                      {searchedLeads.length} lead{searchedLeads.length > 1 ? 's' : ''} trovata{searchedLeads.length > 1 ? 'e' : ''}
-                    </div>
-                  )}
-                  
-                  {selectedLead && (
-                    <div className="mt-2 p-3 bg-blue-50 rounded-lg text-sm">
-                      <div className="font-medium text-blue-900">{selectedLead.nome}</div>
-                      <div className="text-blue-700">
-                        {selectedLead.localita} • {selectedLead.camere} camera{selectedLead.camere > 1 ? 'e' : ''}
-                        {selectedLead.telefono && (
-                          <span> • Tel: {selectedLead.telefono}</span>
-                        )}
-                        {selectedLead.email && (
-                          <span> • Email: {selectedLead.email}</span>
-                        )}
-                      </div>
-                      <div className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mt-1 ${
-                        selectedLead.status === 'cliente_confermato' ? 'bg-green-100 text-green-800' :
-                        selectedLead.status === 'cliente_attesa' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {selectedLead.status === 'cliente_confermato' ? 'Cliente Confermato' :
-                         selectedLead.status === 'cliente_attesa' ? 'Cliente in Attesa' : 'Lead'}
-                      </div>
-                    </div>
-                  )}
-                </div>
                 </div>
               </CardContent>
             </Card>
